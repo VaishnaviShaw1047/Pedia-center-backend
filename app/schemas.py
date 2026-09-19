@@ -1,5 +1,6 @@
-from datetime import date
+from datetime import date, datetime, time
 from typing import Optional
+
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -148,5 +149,191 @@ class GuardianMe(BaseModel):
     last_name: str
     mobile_number: str
     role: str
+
+    model_config = {"from_attributes": True}
+
+class DoctorCreate(BaseModel):
+    first_name: str = Field(..., max_length=50)
+    last_name: str = Field(..., max_length=50)
+    registration_no: str = Field(..., max_length=30)
+    qualification: str = Field(..., max_length=150)
+    specialty: str = Field(..., max_length=60)
+    experience_years: int = Field(0, ge=0, le=70)
+    languages: Optional[str] = Field(None, max_length=100)
+    consultation_fee: int = Field(..., ge=0)
+    available_days: Optional[str] = Field(None, max_length=60)
+    mobile_number: Optional[str] = Field(None, pattern=r"^[6-9]\d{9}$")
+    email: Optional[EmailStr] = None
+    temporary_password: str = Field(..., min_length=8)
+
+
+class DoctorCreated(BaseModel):
+    doctor_id: int
+    staff_id: str
+    first_name: str
+    last_name: str
+    specialty: str
+    message: str
+
+
+class DoctorListItem(BaseModel):
+    doctor_id: int
+    staff_id: str
+    first_name: str
+    last_name: str
+    qualification: str
+    specialty: str
+    experience_years: int
+    languages: Optional[str] = None
+    consultation_fee: int
+    available_days: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class DoctorLoginRequest(BaseModel):
+    staff_id: str = Field(..., max_length=20)
+    password: str
+
+# class DoctorCreate(BaseModel):
+#     first_name: str = Field(..., max_length=50)
+#     last_name: str = Field(..., max_length=50)
+#     registration_no: str = Field(..., max_length=30)
+#     qualification: str = Field(..., max_length=150)
+#     specialty: str = Field(..., max_length=60)
+#     experience_years: int = Field(0, ge=0, le=70)
+#     languages: Optional[str] = Field(None, max_length=100)
+#     consultation_fee: int = Field(..., ge=0)
+#     available_days: Optional[str] = Field(None, max_length=60)
+#     mobile_number: Optional[str] = Field(None, pattern=r"^[6-9]\d{9}$")
+#     email: Optional[EmailStr] = None
+#     temporary_password: str = Field(..., min_length=8)
+
+
+# class DoctorCreated(BaseModel):
+#     doctor_id: int
+#     staff_id: str
+#     first_name: str
+#     last_name: str
+#     specialty: str
+#     message: str
+
+
+# class DoctorListItem(BaseModel):
+#     # doctor_id: int
+#     # staff_id: str
+#     # first_name: str
+#     # last_name: str
+#     # qualification: str
+#     # specialty: str
+#     # experience_years: int
+#     # languages: Optional[str] = None
+#     # consultation_fee: int
+#     # available_days: Optional[str] = None
+
+#     # model_config = {"from_attributes": True}
+
+
+class DoctorLoginRequest(BaseModel):
+    staff_id: str = Field(..., max_length=20)
+    password: str
+
+
+class DoctorCard(BaseModel):
+    doctor_id: int
+    first_name: str
+    last_name: str
+    qualification: str
+    specialty: str
+    experience_years: int
+    languages: Optional[str] = None
+    consultation_fee: int
+    available_days: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class SpecialtyOption(BaseModel):
+    specialty: str
+    doctor_count: int
+
+
+class AvailabilityCreate(BaseModel):
+    day_of_week: int = Field(..., ge=0, le=6, description="0 = Monday, 6 = Sunday")
+    start_time: time
+    end_time: time
+    slot_minutes: int = Field(15, ge=5, le=120)
+
+    @field_validator("end_time")
+    @classmethod
+    def end_after_start(cls, value: time, info) -> time:
+        start = info.data.get("start_time")
+        if start and value <= start:
+            raise ValueError("end_time must be after start_time")
+        return value
+
+
+class AvailabilityOut(BaseModel):
+    availability_id: int
+    doctor_id: int
+    day_of_week: int
+    start_time: time
+    end_time: time
+    slot_minutes: int
+
+    model_config = {"from_attributes": True}
+
+
+class SlotResponse(BaseModel):
+    doctor_id: int
+    doctor_name: str
+    date: date
+    day_of_week: int
+    slots: list[str]
+
+class AppointmentCreate(BaseModel):
+    doctor_id: int
+    patient_id: int
+    scheduled_at: datetime
+    reason_for_visit: Optional[str] = Field(None, max_length=255)
+
+
+class AppointmentOut(BaseModel):
+    appointment_id: int
+    appointment_ref: str
+    doctor_id: int
+    doctor_name: str
+    patient_id: int
+    patient_name: str
+    mrn: str
+    scheduled_at: datetime
+    duration_minutes: int
+    status: str
+    reason_for_visit: Optional[str] = None
+
+
+class AppointmentCancel(BaseModel):
+    reason: Optional[str] = Field(None, max_length=255)
+
+class DoctorTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    must_change_password: bool
+    doctor_name: str
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=8)
+
+
+class DoctorMe(BaseModel):
+    doctor_id: int
+    staff_id: str
+    first_name: str
+    last_name: str
+    specialty: str
+    registration_no: str
+    must_change_password: bool
 
     model_config = {"from_attributes": True}

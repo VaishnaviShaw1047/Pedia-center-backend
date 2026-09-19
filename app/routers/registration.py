@@ -3,15 +3,16 @@ import uuid
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from app.auth import hash_password
 
 from app import models, schemas
 from app.database import get_db
+from app.auth import hash_password
 
 router = APIRouter()
 
 
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
 
 
 def generate_mrn(patient_id: int) -> str:

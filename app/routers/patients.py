@@ -1,11 +1,27 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import or_
-from sqlalchemy.orm import Session, joinedload
+"""Patient routes. HTTP only."""
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
 
 from app import models, schemas
 from app.database import get_db
+from app.service import PatientService
 
 router = APIRouter()
+
+
+def to_list_item(patient: models.Patient) -> schemas.PatientSummaryResponse:
+    return schemas.PatientSummaryResponse(
+        patient_id=patient.patient_id,
+        mrn=patient.mrn,
+        first_name=patient.first_name,
+        last_name=patient.last_name,
+        date_of_birth=patient.date_of_birth,
+        gender=patient.gender,
+        blood_group=patient.blood_group,
+        guardian_name=f"{patient.guardian.first_name} {patient.guardian.last_name}",
+        guardian_mobile=patient.guardian.mobile_number,
+    )
 
 
 @router.get("/patients", response_model=schemas.PatientListResponse)
@@ -15,82 +31,26 @@ def list_patients(
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    query = (
-        db.query(models.Patient)
-        .options(joinedload(models.Patient.guardian))
-        .filter(models.Patient.is_active == True)
-    )
-
-    if search:
-        term = f"%{search.strip()}%"
-        query = query.join(models.Guardian).filter(
-            or_(
-                models.Patient.first_name.ilike(term),
-                models.Patient.last_name.ilike(term),
-                models.Patient.mrn.ilike(term),
-                models.Guardian.mobile_number.ilike(term),
-            )
-        )
-
-    total = query.count()
-
-    patients = (
-        query.order_by(models.Patient.patient_id.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
-    )
-
-    items = [
-        schemas.PatientListItem(
-            patient_id=p.patient_id,
-            mrn=p.mrn,
-            first_name=p.first_name,
-            last_name=p.last_name,
-            date_of_birth=p.date_of_birth,
-            gender=p.gender,
-            blood_group=p.blood_group,
-            guardian_name=f"{p.guardian.first_name} {p.guardian.last_name}",
-            guardian_mobile=p.guardian.mobile_number,
-        )
-        for p in patients
-    ]
+    total, patients = PatientService.list_patients(db, search, page, page_size)
 
     return schemas.PatientListResponse(
-        total=total, page=page, page_size=page_size, items=items
+        total=total,
+        page=page,
+        page_size=page_size,
+        items=[to_list_item(p) for p in patients],
     )
 
 
-@router.get("/patients/{mrn}", response_model=schemas.PatientDetail)
+@router.get("/patients/{mrn}", response_model=schemas.PatientDetailResponse)
 def get_patient(mrn: str, db: Session = Depends(get_db)):
-    patient = db.query(models.Patient).filter(models.Patient.mrn == mrn).first()
-
-    if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
-
-    return patient
+    return PatientService.get_by_mrn(db, mrn)
 
 
-@router.patch("/patients/{mrn}", response_model=schemas.PatientDetail)
+@router.patch("/patients/{mrn}", response_model=schemas.PatientDetailResponse)
 def update_patient(
     mrn: str,
-    payload: schemas.PatientUpdate,
+    payload: schemas.PatientUpdateRequest,
     db: Session = Depends(get_db),
 ):
-    patient = db.query(models.Patient).filter(models.Patient.mrn == mrn).first()
+    return PatientService.update(db, mrn, payload)
 
-    if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
-
-    changes = payload.model_dump(exclude_unset=True)
-
-    if not changes:
-        raise HTTPException(status_code=400, detail="No fields provided to update")
-
-    for field, value in changes.items():
-        setattr(patient, field, value)
-
-    db.commit()
-    db.refresh(patient)
-
-    return patient

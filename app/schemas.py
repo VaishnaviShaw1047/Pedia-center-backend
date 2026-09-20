@@ -5,7 +5,7 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
-class ChildCreate(BaseModel):
+class ChildCreateRequest(BaseModel):
     first_name: str = Field(..., max_length=50)
     last_name: str = Field(..., max_length=50)
     date_of_birth: date
@@ -37,7 +37,7 @@ class ChildCreate(BaseModel):
         return value
 
 
-class GuardianCreate(BaseModel):
+class RegistrationRequest(BaseModel):
     first_name: str = Field(..., max_length=50)
     last_name: str = Field(..., max_length=50)
     relationship_to_child: str = Field(..., max_length=20)
@@ -57,7 +57,7 @@ class GuardianCreate(BaseModel):
     terms_accepted: bool
     health_data_consent: bool
 
-    children: list[ChildCreate] = Field(..., min_length=1)
+    children: list[ChildCreateRequest] = Field(..., min_length=1)
 
     @field_validator("terms_accepted", "health_data_consent")
     @classmethod
@@ -67,7 +67,7 @@ class GuardianCreate(BaseModel):
         return value
 
 
-class PatientOut(BaseModel):
+class RegisteredPatientResponse(BaseModel):
     patient_id: int
     mrn: str
     first_name: str
@@ -77,11 +77,11 @@ class PatientOut(BaseModel):
 
 class RegistrationResponse(BaseModel):
     guardian_id: int
-    patients: list[PatientOut]
+    patients: list[RegisteredPatientResponse]
     message: str
 
 
-class PatientListItem(BaseModel):
+class PatientSummaryResponse(BaseModel):
     patient_id: int
     mrn: str
     first_name: str
@@ -99,10 +99,10 @@ class PatientListResponse(BaseModel):
     total: int
     page: int
     page_size: int
-    items: list[PatientListItem]
+    items: list[PatientSummaryResponse]
 
 
-class PatientUpdate(BaseModel):
+class PatientUpdateRequest(BaseModel):
     first_name: Optional[str] = Field(None, max_length=50)
     last_name: Optional[str] = Field(None, max_length=50)
     gender: Optional[str] = Field(None, max_length=10)
@@ -115,7 +115,7 @@ class PatientUpdate(BaseModel):
     referred_by: Optional[str] = Field(None, max_length=100)
 
 
-class PatientDetail(BaseModel):
+class PatientDetailResponse(BaseModel):
     patient_id: int
     mrn: str
     first_name: str
@@ -133,17 +133,17 @@ class PatientDetail(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class LoginRequest(BaseModel):
+class GuardianLoginRequest(BaseModel):
     mobile_number: str = Field(..., pattern=r"^[6-9]\d{9}$")
     password: str
 
 
-class TokenResponse(BaseModel):
+class AuthTokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
 
-class GuardianMe(BaseModel):
+class GuardianProfileResponse(BaseModel):
     guardian_id: int
     first_name: str
     last_name: str
@@ -152,7 +152,7 @@ class GuardianMe(BaseModel):
 
     model_config = {"from_attributes": True}
 
-class DoctorCreate(BaseModel):
+class DoctorCreateRequest(BaseModel):
     first_name: str = Field(..., max_length=50)
     last_name: str = Field(..., max_length=50)
     registration_no: str = Field(..., max_length=30)
@@ -167,7 +167,7 @@ class DoctorCreate(BaseModel):
     temporary_password: str = Field(..., min_length=8)
 
 
-class DoctorCreated(BaseModel):
+class DoctorCreateResponse(BaseModel):
     doctor_id: int
     staff_id: str
     first_name: str
@@ -176,7 +176,7 @@ class DoctorCreated(BaseModel):
     message: str
 
 
-class DoctorListItem(BaseModel):
+class DoctorSummaryResponse(BaseModel):
     doctor_id: int
     staff_id: str
     first_name: str
@@ -195,7 +195,7 @@ class DoctorLoginRequest(BaseModel):
     staff_id: str = Field(..., max_length=20)
     password: str
 
-# class DoctorCreate(BaseModel):
+# class DoctorCreateRequest(BaseModel):
 #     first_name: str = Field(..., max_length=50)
 #     last_name: str = Field(..., max_length=50)
 #     registration_no: str = Field(..., max_length=30)
@@ -210,7 +210,7 @@ class DoctorLoginRequest(BaseModel):
 #     temporary_password: str = Field(..., min_length=8)
 
 
-# class DoctorCreated(BaseModel):
+# class DoctorCreateResponse(BaseModel):
 #     doctor_id: int
 #     staff_id: str
 #     first_name: str
@@ -219,7 +219,7 @@ class DoctorLoginRequest(BaseModel):
 #     message: str
 
 
-# class DoctorListItem(BaseModel):
+# class DoctorSummaryResponse(BaseModel):
 #     # doctor_id: int
 #     # staff_id: str
 #     # first_name: str
@@ -239,7 +239,7 @@ class DoctorLoginRequest(BaseModel):
     password: str
 
 
-class DoctorCard(BaseModel):
+class DoctorPublicResponse(BaseModel):
     doctor_id: int
     first_name: str
     last_name: str
@@ -253,12 +253,12 @@ class DoctorCard(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class SpecialtyOption(BaseModel):
+class SpecialtyCountResponse(BaseModel):
     specialty: str
     doctor_count: int
 
 
-class AvailabilityCreate(BaseModel):
+class AvailabilityCreateRequest(BaseModel):
     day_of_week: int = Field(..., ge=0, le=6, description="0 = Monday, 6 = Sunday")
     start_time: time
     end_time: time
@@ -273,7 +273,7 @@ class AvailabilityCreate(BaseModel):
         return value
 
 
-class AvailabilityOut(BaseModel):
+class AvailabilityResponse(BaseModel):
     availability_id: int
     doctor_id: int
     day_of_week: int
@@ -284,21 +284,21 @@ class AvailabilityOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class SlotResponse(BaseModel):
+class AvailableSlotsResponse(BaseModel):
     doctor_id: int
     doctor_name: str
     date: date
     day_of_week: int
     slots: list[str]
 
-class AppointmentCreate(BaseModel):
+class AppointmentBookingRequest(BaseModel):
     doctor_id: int
     patient_id: int
     scheduled_at: datetime
     reason_for_visit: Optional[str] = Field(None, max_length=255)
 
 
-class AppointmentOut(BaseModel):
+class AppointmentResponse(BaseModel):
     appointment_id: int
     appointment_ref: str
     doctor_id: int
@@ -312,7 +312,7 @@ class AppointmentOut(BaseModel):
     reason_for_visit: Optional[str] = None
 
 
-class AppointmentCancel(BaseModel):
+class AppointmentCancelRequest(BaseModel):
     reason: Optional[str] = Field(None, max_length=255)
 
 class DoctorTokenResponse(BaseModel):
@@ -322,12 +322,12 @@ class DoctorTokenResponse(BaseModel):
     doctor_name: str
 
 
-class PasswordChange(BaseModel):
+class PasswordChangeRequest(BaseModel):
     current_password: str
     new_password: str = Field(..., min_length=8)
 
 
-class DoctorMe(BaseModel):
+class DoctorProfileResponse(BaseModel):
     doctor_id: int
     staff_id: str
     first_name: str

@@ -51,6 +51,20 @@ class Guardian(Base):
 
     patients = relationship("Patient", back_populates="guardian")
 
+class User(Base):
+    __tablename__ = "users"
+
+    user_id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), nullable=False, unique=True, index=True)
+    first_name = Column(String(50), nullable=False)
+    last_name = Column(String(50), nullable=False)
+    password = Column(String(255), nullable=False)
+    user_type = Column(String(20), nullable=False, default="user")
+    # is_active = Column(Boolean, nullable=False, default=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 
 class Patient(Base):
     __tablename__ = "patient"

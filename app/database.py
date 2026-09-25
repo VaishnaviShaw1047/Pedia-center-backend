@@ -3,14 +3,14 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 from app.config import DATABASE_URL
 
-connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+connect_args = {"check_same_thread": False} 
 # If I'm using SQLite, give SQLite this extra configuration. Otherwise, give no extra configuration.
 # "is commonly used with web applications such as FastAPI because requests can involve different threads.
 
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
+engine = create_engine(DATABASE_URL)
 # creates the connection between your Python application and the database.
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+DbSessionContext = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # creates database sessions that you use to execute queries.
 
 Base = declarative_base()
@@ -18,8 +18,8 @@ Base = declarative_base()
 
 
 def get_db():
-    db = SessionLocal()
+    dbContext = DbSessionContext()
     try:
-        yield db
+        yield dbContext
     finally:
-        db.close()
+        dbContext.close()

@@ -181,11 +181,8 @@ class DoctorRepository:
 
     @staticmethod
     def get_by_staff_id(db: Session, staff_id: str) -> models.Doctor | None:
-        return (
-            db.query(models.Doctor)
-            .filter(models.Doctor.staff_id == staff_id)
-            .first()
-        )
+        staff=db.query(models.Doctor).filter(models.Doctor.staff_id == staff_id).first()
+        return staff
 
     @staticmethod
     def search(

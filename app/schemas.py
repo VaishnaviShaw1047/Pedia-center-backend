@@ -195,44 +195,6 @@ class DoctorLoginRequest(BaseModel):
     staff_id: str = Field(..., max_length=20)
     password: str
 
-# class DoctorCreateRequest(BaseModel):
-#     first_name: str = Field(..., max_length=50)
-#     last_name: str = Field(..., max_length=50)
-#     registration_no: str = Field(..., max_length=30)
-#     qualification: str = Field(..., max_length=150)
-#     specialty: str = Field(..., max_length=60)
-#     experience_years: int = Field(0, ge=0, le=70)
-#     languages: Optional[str] = Field(None, max_length=100)
-#     consultation_fee: int = Field(..., ge=0)
-#     available_days: Optional[str] = Field(None, max_length=60)
-#     mobile_number: Optional[str] = Field(None, pattern=r"^[6-9]\d{9}$")
-#     email: Optional[EmailStr] = None
-#     temporary_password: str = Field(..., min_length=8)
-
-
-# class DoctorCreateResponse(BaseModel):
-#     doctor_id: int
-#     staff_id: str
-#     first_name: str
-#     last_name: str
-#     specialty: str
-#     message: str
-
-
-# class DoctorSummaryResponse(BaseModel):
-#     # doctor_id: int
-#     # staff_id: str
-#     # first_name: str
-#     # last_name: str
-#     # qualification: str
-#     # specialty: str
-#     # experience_years: int
-#     # languages: Optional[str] = None
-#     # consultation_fee: int
-#     # available_days: Optional[str] = None
-
-#     # model_config = {"from_attributes": True}
-
 
 class DoctorLoginRequest(BaseModel):
     staff_id: str = Field(..., max_length=20)

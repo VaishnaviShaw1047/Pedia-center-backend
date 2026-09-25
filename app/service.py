@@ -7,9 +7,7 @@ model objects.
 
 One compromise: services raise HTTPException directly rather than a domain
 error the router would translate. Strictly a service should not know about
-HTTP status codes. Keeping them here avoids an extra layer of exception
-mapping, and it is what most FastAPI codebases do — but it is a compromise,
-not the textbook answer.
+HTTP status codes. Keeping them here avoids an extra layer .
 
 Classes:
     RegistrationService
@@ -104,6 +102,7 @@ class RegistrationService:
                 immunization_status=child.immunization_status,
                 referred_by=child.referred_by,
             )
+            
 
             # flush assigns patient_id, which the MRN is derived from
             cls.patients.add(db, patient)

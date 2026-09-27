@@ -24,8 +24,10 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app import models
-from app.auth import create_access_token, hash_password, verify_password
+from app import models, schemas
+
+from app.auth import create_access_token, hash_password, verify_password, verify_token
+
 from app.repository import (
     AppointmentRepository,
     DoctorRepository,
@@ -466,14 +468,19 @@ class UserService:
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         return user
+
+    
+    @classmethod
     def get_user_by_username(cls, db: Session, username: str) -> models.User:
         user = cls.userRepo.get_by_username(db, username)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         return user
+
+    
     @classmethod
-    def create_user(cls, db: Session, user_data:models.User) -> models.User:
-        existing_user = cls.userRepo.get_by_username(db, user_data.username)
+    def create_user(cls, db: Session, payload: schemas.UserCreateRequest) -> models.User:
+        existing_user = cls.userRepo.get_by_username(db, payload.username)
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -481,16 +488,19 @@ class UserService:
             )
 
         user = models.User(
-            username=user_data.username,
-            
-            password_hash=hash_password(user_data.password),
-            is_active=True,
-        )
+    username=payload.username,
+    first_name=payload.first_name,
+    last_name=payload.last_name,
+    user_type=payload.user_type,
+    password_hash=hash_password(payload.password),
+    is_active=True,
+)
 
         cls.userRepo.add(db, user)
         cls.userRepo.commit(db)
 
         return cls.userRepo.refresh(db, user)
+    @classmethod
     def update_user(cls, db: Session, user_id: int, user_data) -> models.User:
         user = cls.get_user_by_id(db, user_id)
 
@@ -507,18 +517,21 @@ class UserService:
 
         cls.userRepo.commit(db)
         return cls.userRepo.refresh(db, user)
+
+    @classmethod
     def delete_user(cls, db: Session, user_id: int) -> None:
         user = cls.get_user_by_id(db, user_id)
         cls.userRepo.delete(db, user)
         cls.userRepo.commit(db)    
 
+    @classmethod
     def list_users(cls, db: Session, search: str | None, page: int, page_size: int) -> tuple[int, list[models.User]]:
         """Returns (total, page of users). Total is counted before paging."""
         query = cls.userRepo.build_list_query(db, search)
         total = cls.userRepo.count(query)
         users = cls.userRepo.page(query, page, page_size)
         return total, users
-    
+    @classmethod
     def authenticate_user(cls, db: Session, email: str, password: str) -> models.User:
         user = cls.userRepo.get_by_username(db, email)
         if not user or not verify_password(password, user.password_hash):
@@ -527,6 +540,14 @@ class UserService:
                 detail="Incorrect email or password",
             )
         return user 
+
+    @classmethod
+    def reset_user_password(cls, db: Session, user_id: int, new_password: str) -> None:
+        user = cls.get_user_by_id(db, user_id)
+        user.password_hash = hash_password(new_password)
+        cls.userRepo.commit(db)
+
+    @classmethod
     def change_user_password(cls, db: Session, user_id: int, current_password: str, new_password: str) -> None:
         user = cls.get_user_by_id(db, user_id)
 
@@ -537,19 +558,21 @@ class UserService:
 
         user.password_hash = hash_password(new_password)
         cls.userRepo.commit(db)
-
+    @classmethod
     def generate_user_token(cls, user: models.User) -> str:
         return create_access_token(user.user_id, "user", token_type="user")
     
-    def verify_user_token(cls, token: str) -> models.User:
-        payload = create_access_token.verify_token(token)
+    
+    @classmethod
+    def verify_user_token(cls,db:Session, token: str) -> models.User:
+        payload = verify_token(token)
         user_id = payload.get("sub")
         if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token",
+                detail="Invalidyes token",
             )
-        return cls.get_user_by_id(user_id)
+        return cls.get_user_by_id(db, user_id)
 #  AUTH
 # =====================================================================
 

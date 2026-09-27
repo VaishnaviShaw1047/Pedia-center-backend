@@ -23,14 +23,15 @@ def list_users(
         total=total,
         page=page,
         page_size=page_size,
-        items=[schemas.UserDetails(
+        items=[schemas.UserDetailResponse(
             user_id=user.user_id,
             first_name=user.first_name,
             last_name=user.last_name,
             username=user.username,
-            role=user.role
+            user_type=user.user_type
         ) for user in users],
     )
+@router.get("/{user_id}", response_model=schemas.UserDetailResponse)
 def get_user(user_id: int, db: Session = Depends(get_db)):
     user = UserService.get_user_by_id(db, user_id)
     return schemas.UserDetailResponse(
@@ -38,7 +39,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         first_name=user.first_name,
         last_name=user.last_name,
         username=user.username,
-       role=user.role,
+        user_type=user.user_type,
     )
 @router.post("/{user_id}", response_model=schemas.UserListResponse)
 def update_user(
@@ -53,18 +54,19 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     UserService.delete_user(db, user_id)
     return {"message": "User deleted successfully"}  
 
-@router.post("", response_model=schemas.UserListResponse)
+@router.post("", response_model=schemas.UserDetailResponse)
 def create_user(
     payload: schemas.UserCreateRequest,
     db: Session = Depends(get_db),
 ):
-    user_data= models.User(
-        username=payload.username,
-        first_name=payload.first_name,
-        last_name=payload.last_name,
-        user_type=payload.user_type
-    )
-    user = UserService.create_user(db, user_data)
+#     user_data= models.User(
+#         username=payload.username,
+#         first_name=payload.first_name,
+#         last_name=payload.last_name,
+#         user_type=payload.user_type
+#     )
+    user = UserService.create_user(db, payload)
+
     return schemas.UserDetailResponse(
         user_id=user.user_id,
         first_name=user.first_name,
@@ -91,7 +93,7 @@ def reset_user_password(
     return {"message": "Password reset successfully"}
 
 
-@router.get("/{user_id}", response_model=schemas.UserListResponse)
+@router.get("/{user_id}", response_model=schemas.UserDetailResponse)
 def get_user_by_user_id(user_id: int, db: Session = Depends(get_db)):
     user = UserService.get_user_by_id(db, user_id)
     return schemas.UserDetailResponse(
@@ -99,6 +101,6 @@ def get_user_by_user_id(user_id: int, db: Session = Depends(get_db)):
         first_name=user.first_name,
         last_name=user.last_name,
         username=user.username,
-        role=user.role,
+        user_type=user.user_type,
     )
 

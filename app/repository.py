@@ -10,6 +10,7 @@ Classes:
     PatientRepository
     DoctorRepository
     AppointmentRepository
+    UserRepository
 """
 
 from datetime import datetime, time
@@ -445,3 +446,35 @@ class AppointmentRepository:
         db.refresh(appointment)
         return appointment
 
+class UserRepository:
+
+    @staticmethod
+    def get_by_id(db: Session, user_id: int) -> models.User | None:
+        return (
+            db.query(models.User)
+            .filter(models.User.user_id == user_id)
+            .first()
+        )
+
+    @staticmethod
+    def get_by_username(db: Session, username: str) -> models.User | None:
+        return (
+            db.query(models.User)
+            .filter(models.User.username == username)
+            .first()
+        )
+
+    @staticmethod
+    def adduser(db: Session, user: models.User) -> models.User:
+        """Stage and flush so the database assigns user_id."""
+        db.add(user)
+        db.flush()
+        return user
+
+    @staticmethod
+    def commit(db: Session) -> None:
+        db.commit()
+
+    @staticmethod
+    def rollback(db: Session) -> None:
+        db.rollback()

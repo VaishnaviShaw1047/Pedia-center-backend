@@ -31,6 +31,7 @@ from app.repository import (
     DoctorRepository,
     GuardianRepository,
     PatientRepository,
+    UserRepository,
 )
 
 
@@ -454,6 +455,101 @@ class AppointmentService:
 
 
 # =====================================================================
+# user
+class UserService:
+    
+    userRepo = UserRepository
+
+    @classmethod
+    def get_user_by_id(cls, db: Session, user_id: int) -> models.User:
+        user = cls.userRepo.get_by_id(db, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user
+    def get_user_by_username(cls, db: Session, username: str) -> models.User:
+        user = cls.userRepo.get_by_username(db, username)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user
+    @classmethod
+    def create_user(cls, db: Session, user_data:models.User) -> models.User:
+        existing_user = cls.userRepo.get_by_username(db, user_data.username)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A user with this username already exists",
+            )
+
+        user = models.User(
+            username=user_data.username,
+            
+            password_hash=hash_password(user_data.password),
+            is_active=True,
+        )
+
+        cls.userRepo.add(db, user)
+        cls.userRepo.commit(db)
+
+        return cls.userRepo.refresh(db, user)
+    def update_user(cls, db: Session, user_id: int, user_data) -> models.User:
+        user = cls.get_user_by_id(db, user_id)
+
+        # exclude_unset: only the fields the client actually sent.
+        changes = user_data.model_dump(exclude_unset=True)
+
+        if not changes:
+            raise HTTPException(
+                status_code=400, detail="No fields provided to update"
+            )
+
+        for field, value in changes.items():
+            setattr(user, field, value)
+
+        cls.userRepo.commit(db)
+        return cls.userRepo.refresh(db, user)
+    def delete_user(cls, db: Session, user_id: int) -> None:
+        user = cls.get_user_by_id(db, user_id)
+        cls.userRepo.delete(db, user)
+        cls.userRepo.commit(db)    
+
+    def list_users(cls, db: Session, search: str | None, page: int, page_size: int) -> tuple[int, list[models.User]]:
+        """Returns (total, page of users). Total is counted before paging."""
+        query = cls.userRepo.build_list_query(db, search)
+        total = cls.userRepo.count(query)
+        users = cls.userRepo.page(query, page, page_size)
+        return total, users
+    
+    def authenticate_user(cls, db: Session, email: str, password: str) -> models.User:
+        user = cls.userRepo.get_by_username(db, email)
+        if not user or not verify_password(password, user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect email or password",
+            )
+        return user 
+    def change_user_password(cls, db: Session, user_id: int, current_password: str, new_password: str) -> None:
+        user = cls.get_user_by_id(db, user_id)
+
+        if not verify_password(current_password, user.password_hash):
+            raise HTTPException(
+                status_code=400, detail="Current password is incorrect"
+            )
+
+        user.password_hash = hash_password(new_password)
+        cls.userRepo.commit(db)
+
+    def generate_user_token(cls, user: models.User) -> str:
+        return create_access_token(user.user_id, "user", token_type="user")
+    
+    def verify_user_token(cls, token: str) -> models.User:
+        payload = create_access_token.verify_token(token)
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+            )
+        return cls.get_user_by_id(user_id)
 #  AUTH
 # =====================================================================
 

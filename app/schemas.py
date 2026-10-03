@@ -299,3 +299,34 @@ class DoctorProfileResponse(BaseModel):
     must_change_password: bool
 
     model_config = {"from_attributes": True}
+
+class UserCreateRequest(BaseModel):
+    username: str = Field(..., max_length=50)
+    password: str = Field(..., min_length=8)
+    user_type: str = Field(..., max_length=15)
+    first_name: Optional[str] = Field(None, max_length=50)
+    last_name: Optional[str] = Field(None, max_length=50)
+
+class UserDetailResponse(BaseModel):
+    user_id: int
+    username: str
+    user_type: str
+    first_name: Optional[str] = None
+    second_name: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+class UserListResponse(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    items: list[UserDetailResponse]
+
+
+
+
+
+class UserUpdateRequest(BaseModel):
+    first_name: Optional[str] = Field(None, max_length=50)
+    second_name: Optional[str] = Field(None, max_length=50)
+    user_type: Optional[str] = Field(None, max_length=15)

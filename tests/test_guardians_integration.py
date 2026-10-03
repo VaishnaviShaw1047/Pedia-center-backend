@@ -134,8 +134,4 @@ def test_guardian_registration_login_and_profile():
     assert profile["first_name"] == "Test"
     assert profile["last_name"] == "Guardian"
     assert profile["mobile_number"] == mobile_number
-
-    # Role is currently supplied by the API only when it exists
-    # in the MongoDB guardian document.
-    if "role" in profile:
-        assert profile["role"] in ["parent", "guardian"]
+    assert profile["role"] == "parent"

@@ -26,6 +26,10 @@ def hash_password(password: str) -> str:
 def verify_password(plain: str, hashed: str) -> bool:
     return bcrypt.checkpw(plain.encode(), hashed.encode())
 
+def verify_token(token: str) -> dict:
+    """Decode and validate a JWT, raising credentials_error if invalid."""
+    return _decode(token)
+
 
 def create_access_token(subject_id: int, role: str, token_type: str = "guardian") -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)

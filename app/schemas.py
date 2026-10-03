@@ -5,6 +5,7 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
+
 class ChildCreateRequest(BaseModel):
     first_name: str = Field(..., max_length=50)
     last_name: str = Field(..., max_length=50)
@@ -312,7 +313,7 @@ class UserDetailResponse(BaseModel):
     username: str
     user_type: str
     first_name: Optional[str] = None
-    second_name: Optional[str] = None
+    last_name: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -328,5 +329,5 @@ class UserListResponse(BaseModel):
 
 class UserUpdateRequest(BaseModel):
     first_name: Optional[str] = Field(None, max_length=50)
-    second_name: Optional[str] = Field(None, max_length=50)
+    last_name: Optional[str] = Field(None, max_length=50)
     user_type: Optional[str] = Field(None, max_length=15)

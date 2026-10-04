@@ -41,7 +41,7 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         username=user.username,
         user_type=user.user_type,
     )
-@router.post("/{user_id}", response_model=schemas.UserListResponse)
+@router.post("/{user_id}", response_model=schemas.UserDetailResponse)
 def update_user(
     user_id: int,
     payload: schemas.UserUpdateRequest,
@@ -74,7 +74,7 @@ def create_user(
         username=user.username,
         user_type=user.user_type,
     )
-@router.post("/{user_id}/change-password}", response_model=schemas.UserListResponse)
+@router.post("/{user_id}/change-password")
 def change_user_password(
     user_id: int,
     payload: schemas.PasswordChangeRequest,
@@ -83,7 +83,7 @@ def change_user_password(
     UserService.change_user_password(db, user_id, payload.current_password, payload.new_password)
     return {"message": "Password updated successfully"}  
    
-@router.post("/{user_id}/reset-password}", response_model=schemas.UserListResponse)
+@router.post("/{user_id}/reset-password")
 def reset_user_password(
     user_id: int,
     payload: schemas.PasswordChangeRequest,

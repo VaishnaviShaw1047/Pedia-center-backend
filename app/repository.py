@@ -455,6 +455,61 @@ class UserRepository:
             .filter(models.User.user_id == user_id)
             .first()
         )
+    @staticmethod
+    def list_users(
+        db: Session,
+        search: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> tuple[int, list[models.User]]:
+        query = db.query(models.User)
+
+        if search:
+            term = f"%{search.strip()}%"
+            query = query.filter(
+                or_(
+                    models.User.first_name.ilike(term),
+                    models.User.last_name.ilike(term),
+                    models.User.username.ilike(term),
+                )
+            )
+
+        total = query.count()
+        users = (
+            query.order_by(models.User.user_id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
+
+        return total, users
+
+    @staticmethod
+    @staticmethod
+    def build_list_query(db: Session, search: str | None):
+        query = db.query(models.User)
+
+        if search:
+            query = query.filter(
+                 (models.User.username.ilike(f"%{search}%"))
+                 (models.User.first_name.ilike(f"%{search}%"))
+                 (models.User.last_name.ilike(f"%{search}%"))
+        )
+
+        return query
+
+    @staticmethod
+    def page(query, page: int, page_size: int) -> list[models.User]:
+        return (
+            query.order_by(models.User.user_id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )       
+ 
+    @staticmethod
+    def count(query) -> int:
+        return query.count()    
 
     @staticmethod
     def get_by_username(db: Session, username: str) -> models.User | None:

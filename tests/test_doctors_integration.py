@@ -4,56 +4,48 @@ from datetime import date, timedelta
 from fastapi.testclient import TestClient
 
 from main import app
-from app import models
-from app.auth import create_access_token
-from app.database import DbSessionContext
+from app.auth import create_access_token, hash_password
+from app.mongodb import guardians_collection
+
 
 client = TestClient(app)
-
-
 def create_staff_token():
     """
-    Create a temporary staff guardian directly in the test database
+    Create a temporary staff guardian directly in MongoDB
     and generate a real staff JWT.
     """
 
-    db = DbSessionContext()
+    mobile_number = f"9{int(time.time() * 1000) % 1_000_000_000:09d}"
+    guardian_id = int(time.time() * 1000)
 
-    try:
-        mobile_number = f"9{int(time.time() * 1000) % 1_000_000_000:09d}"
+    staff = {
+        "guardian_id": guardian_id,
+        "first_name": "Test",
+        "last_name": "Staff",
+        "relationship_to_child": "Staff",
+        "mobile_number": mobile_number,
+        "email": f"staff{guardian_id}@example.com",
+        "password_hash": hash_password("TestStaffPassword123"),
+        "role": "staff",
+        "address_line1": "123 Test Street",
+        "city": "Kolkata",
+        "state": "West Bengal",
+        "pincode": "700001",
+        "preferred_language": "English",
+        "terms_accepted": True,
+        "health_data_consent": True,
+        "mobile_verified": True,
+        "is_active": True,
+    }
 
-        staff = models.Guardian(
-            first_name="Test",
-            last_name="Staff",
-            relationship_to_child="Staff",
-            mobile_number=mobile_number,
-            email=f"staff{int(time.time() * 1000)}@example.com",
-            password_hash="test-password-hash",
-            role="staff",
-            address_line1="123 Test Street",
-            city="Kolkata",
-            state="West Bengal",
-            pincode="700001",
-            preferred_language="English",
-            terms_accepted=True,
-            health_data_consent=True,
-            mobile_verified=True,
-            is_active=True,
-        )
+    guardians_collection.insert_one(staff)
 
-        db.add(staff)
-        db.commit()
-        db.refresh(staff)
+    token = create_access_token(
+        subject_id=guardian_id,
+        role="staff",
+    )
 
-        token = create_access_token(
-            subject_id=staff.guardian_id,
-            role=staff.role,
-        )
-
-        return token
-
-    finally:
-        db.close()
+    return token
 
 
 def create_guardian_token():

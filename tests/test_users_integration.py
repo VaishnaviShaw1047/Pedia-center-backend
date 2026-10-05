@@ -1,3 +1,5 @@
+from time import time
+
 from fastapi.testclient import TestClient
 
 from main import app
@@ -7,8 +9,12 @@ client = TestClient(app)
 
 
 def test_create_user():
+    unique_id = int(time() * 1000)
+
+    username = f"integration_user_{unique_id}"
+
     payload = {
-        "username": "integration_user_001",
+        "username": username,
         "password": "Test@1234",
         "user_type": "Admin",
         "first_name": "Integration",
@@ -27,7 +33,7 @@ def test_create_user():
 
     data = response.json()
 
-    assert data["username"] == "integration_user_001"
+    assert data["username"] == username
     assert data["user_type"] == "Admin"
     assert data["first_name"] == "Integration"
     assert data["last_name"] == "User"

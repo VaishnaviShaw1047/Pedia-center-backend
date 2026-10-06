@@ -138,6 +138,10 @@ class GuardianLoginRequest(BaseModel):
     mobile_number: str = Field(..., pattern=r"^[6-9]\d{9}$")
     password: str
 
+class AdminLoginRequest(BaseModel):
+    username: str
+    password: str
+
 
 class AuthTokenResponse(BaseModel):
     access_token: str

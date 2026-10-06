@@ -31,7 +31,7 @@ from app.mongodb import (
     appointments_collection,
 )
 
-from app import  schemas
+from app import schemas
 
 from app.auth import (
     create_access_token,
@@ -50,8 +50,9 @@ from app.repository import (
 
 
 # =====================================================================
-#  REGISTRATION
+# REGISTRATION
 # =====================================================================
+
 class RegistrationService:
 
     guardians = GuardianRepository
@@ -114,7 +115,6 @@ class RegistrationService:
 
         for child in payload.children:
 
-            # Generate next patient_id
             last_patient = patients_collection.find_one(
                 {},
                 sort=[("patient_id", -1)],
@@ -137,7 +137,10 @@ class RegistrationService:
                 "guardian_mobile_number": payload.mobile_number,
                 "first_name": child.first_name,
                 "last_name": child.last_name,
-                "date_of_birth": datetime.combine(child.date_of_birth, datetime.min.time()),
+                "date_of_birth": datetime.combine(
+                    child.date_of_birth,
+                    datetime.min.time(),
+                ),
                 "gender": child.gender,
                 "abha_id": child.abha_id,
                 "aadhaar_number": child.aadhaar_number,
@@ -155,9 +158,11 @@ class RegistrationService:
 
         return guardian, created
 
+
 # =====================================================================
-#  PATIENT
+# PATIENT
 # =====================================================================
+
 class PatientService:
 
     repo = PatientRepository
@@ -177,7 +182,11 @@ class PatientService:
         return total, patients
 
     @classmethod
-    def get_by_mrn(cls, mrn: str) -> dict:
+    def get_by_mrn(
+        cls,
+        mrn: str,
+    ) -> dict:
+
         patient = cls.repo.get_by_mrn(mrn)
 
         if not patient:
@@ -189,11 +198,17 @@ class PatientService:
         return patient
 
     @classmethod
-    def update(cls, mrn: str, payload) -> dict:
+    def update(
+        cls,
+        mrn: str,
+        payload,
+    ) -> dict:
+
         patient = cls.get_by_mrn(mrn)
 
-        # Only update fields actually supplied by the client
-        changes = payload.model_dump(exclude_unset=True)
+        changes = payload.model_dump(
+            exclude_unset=True
+        )
 
         if not changes:
             raise HTTPException(
@@ -208,11 +223,9 @@ class PatientService:
 
         return cls.get_by_mrn(mrn)
 
+
 # =====================================================================
-#  DOCTOR
-# =====================================================================
-# =====================================================================
-#  DOCTOR
+# DOCTOR
 # =====================================================================
 
 class DoctorService:
@@ -220,22 +233,33 @@ class DoctorService:
     repo = DoctorRepository
 
     @staticmethod
-    def generate_staff_id(doctor_id: int) -> str:
+    def generate_staff_id(
+        doctor_id: int,
+    ) -> str:
+
         return f"DOC-2026-{doctor_id:04d}"
 
-    # ---------- creation ----------
+    # -----------------------------------------------------------------
+    # CREATE DOCTOR
+    # -----------------------------------------------------------------
 
     @classmethod
-    def create(cls, payload):
+    def create(
+        cls,
+        payload,
+    ):
 
-        # Check duplicate registration number
-        if cls.repo.get_by_registration_no(payload.registration_no):
+        if cls.repo.get_by_registration_no(
+            payload.registration_no
+        ):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="A doctor with this registration number already exists",
+                detail=(
+                    "A doctor with this registration "
+                    "number already exists"
+                ),
             )
 
-        # Generate next doctor_id
         last_doctor = doctors_collection.find_one(
             {},
             sort=[("doctor_id", -1)],
@@ -249,7 +273,9 @@ class DoctorService:
 
         doctor = {
             "doctor_id": next_doctor_id,
-            "staff_id": cls.generate_staff_id(next_doctor_id),
+            "staff_id": cls.generate_staff_id(
+                next_doctor_id
+            ),
             "first_name": payload.first_name,
             "last_name": payload.last_name,
             "registration_no": payload.registration_no,
@@ -270,9 +296,13 @@ class DoctorService:
 
         cls.repo.add(doctor)
 
-        return cls.repo.get_by_id(next_doctor_id)
+        return cls.repo.get_by_id(
+            next_doctor_id
+        )
 
-    # ---------- browsing ----------
+    # -----------------------------------------------------------------
+    # BROWSE DOCTORS
+    # -----------------------------------------------------------------
 
     @classmethod
     def browse(
@@ -283,6 +313,7 @@ class DoctorService:
         day: str | None = None,
         text: str | None = None,
     ):
+
         return cls.repo.search(
             specialty=specialty,
             language=language,
@@ -293,12 +324,18 @@ class DoctorService:
 
     @classmethod
     def specialties(cls):
+
         return cls.repo.specialty_counts()
 
     @classmethod
-    def get_one(cls, doctor_id: int):
+    def get_one(
+        cls,
+        doctor_id: int,
+    ):
 
-        doctor = cls.repo.get_active_by_id(doctor_id)
+        doctor = cls.repo.get_active_by_id(
+            doctor_id
+        )
 
         if not doctor:
             raise HTTPException(
@@ -308,7 +345,9 @@ class DoctorService:
 
         return doctor
 
-    # ---------- availability ----------
+    # -----------------------------------------------------------------
+    # AVAILABILITY
+    # -----------------------------------------------------------------
 
     @classmethod
     def set_availability(
@@ -317,13 +356,14 @@ class DoctorService:
         payload,
     ):
 
-        if not cls.repo.get_by_id(doctor_id):
+        if not cls.repo.get_by_id(
+            doctor_id
+        ):
             raise HTTPException(
                 status_code=404,
                 detail="Doctor not found",
             )
 
-        # Check overlapping availability
         clash = cls.repo.find_overlapping_availability(
             doctor_id,
             payload.day_of_week,
@@ -334,7 +374,10 @@ class DoctorService:
         if clash:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="This overlaps an existing availability block for that day",
+                detail=(
+                    "This overlaps an existing availability "
+                    "block for that day"
+                ),
             )
 
         availability = {
@@ -355,15 +398,22 @@ class DoctorService:
         cls,
         doctor_id: int,
     ):
-        if not cls.repo.get_active_by_id(doctor_id):
+
+        if not cls.repo.get_active_by_id(
+            doctor_id
+        ):
             raise HTTPException(
                 status_code=404,
                 detail="Doctor not found",
             )
 
-        return cls.repo.list_availability(doctor_id)
+        return cls.repo.list_availability(
+            doctor_id
+        )
 
-    # ---------- slots ----------
+    # -----------------------------------------------------------------
+    # FREE SLOTS
+    # -----------------------------------------------------------------
 
     @classmethod
     def free_slots(
@@ -371,10 +421,6 @@ class DoctorService:
         doctor_id: int,
         slot_date: date,
     ):
-        """
-        Generate every slot the doctor's availability rules produce
-        for that weekday, then remove booked and already-passed slots.
-        """
 
         if slot_date < date.today():
             raise HTTPException(
@@ -382,7 +428,9 @@ class DoctorService:
                 detail="Cannot look up slots in the past",
             )
 
-        doctor = cls.get_one(doctor_id)
+        doctor = cls.get_one(
+            doctor_id
+        )
 
         weekday = slot_date.weekday()
 
@@ -430,15 +478,15 @@ class DoctorService:
         free = [
             slot.strftime("%H:%M")
             for slot in sorted(generated)
-            if slot not in booked and slot > now
+            if slot not in booked
+            and slot > now
         ]
 
         return doctor, weekday, free
+
+
 # =====================================================================
-#  APPOINTMENT
-# =====================================================================
-# =====================================================================
-#  APPOINTMENT
+# APPOINTMENT
 # =====================================================================
 
 class AppointmentService:
@@ -446,7 +494,10 @@ class AppointmentService:
     repo = AppointmentRepository
 
     @staticmethod
-    def generate_ref(appointment_id: int) -> str:
+    def generate_ref(
+        appointment_id: int,
+    ) -> str:
+
         return f"APT-2026-{appointment_id:06d}"
 
     @classmethod
@@ -455,10 +506,6 @@ class AppointmentService:
         doctor_id: int,
         when: datetime,
     ) -> int | None:
-        """
-        Regenerate the doctor's slots for that weekday and look for
-        an exact match.
-        """
 
         rules = cls.repo.get_availability_rules(
             doctor_id,
@@ -500,10 +547,7 @@ class AppointmentService:
         reason_for_visit: str | None,
     ):
 
-        # -------------------------------------------------------------
         # 1. Check doctor
-        # -------------------------------------------------------------
-
         doctor = cls.repo.get_active_doctor(
             doctor_id
         )
@@ -514,22 +558,13 @@ class AppointmentService:
                 detail="Doctor not found",
             )
 
-        # -------------------------------------------------------------
         # 2. Get guardian_id
-        # -------------------------------------------------------------
-
-        # Mongo guardian is a dictionary.
-        # This also keeps temporary compatibility with SQLAlchemy
-        # Guardian objects if one is still being returned by auth.
         if isinstance(guardian, dict):
             guardian_id = guardian["guardian_id"]
         else:
             guardian_id = guardian.guardian_id
 
-        # -------------------------------------------------------------
         # 3. Check patient ownership
-        # -------------------------------------------------------------
-
         patient = cls.repo.get_patient_for_guardian(
             patient_id,
             guardian_id,
@@ -541,10 +576,7 @@ class AppointmentService:
                 detail="Patient not found",
             )
 
-        # -------------------------------------------------------------
         # 4. Normalize appointment time
-        # -------------------------------------------------------------
-
         when = scheduled_at.replace(
             second=0,
             microsecond=0,
@@ -557,10 +589,7 @@ class AppointmentService:
                 detail="Appointment time must be in the future",
             )
 
-        # -------------------------------------------------------------
-        # 5. Check whether requested time is an offered slot
-        # -------------------------------------------------------------
-
+        # 5. Check offered slot
         slot_minutes = cls.slot_length_if_offered(
             doctor["doctor_id"],
             when,
@@ -569,13 +598,13 @@ class AppointmentService:
         if slot_minutes is None:
             raise HTTPException(
                 status_code=400,
-                detail="That time is not an available slot for this doctor",
+                detail=(
+                    "That time is not an available "
+                    "slot for this doctor"
+                ),
             )
 
-        # -------------------------------------------------------------
         # 6. Check doctor slot conflict
-        # -------------------------------------------------------------
-
         if cls.repo.find_slot_conflict(
             doctor["doctor_id"],
             when,
@@ -585,23 +614,20 @@ class AppointmentService:
                 detail="That slot has just been taken",
             )
 
-        # -------------------------------------------------------------
         # 7. Check patient's same-day appointment
-        # -------------------------------------------------------------
-
         if cls.repo.find_same_day_for_patient(
             patient["patient_id"],
             when,
         ):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="This patient already has an appointment on that day",
+                detail=(
+                    "This patient already has an "
+                    "appointment on that day"
+                ),
             )
 
-        # -------------------------------------------------------------
         # 8. Generate appointment ID
-        # -------------------------------------------------------------
-
         last_appointment = appointments_collection.find_one(
             {},
             sort=[("appointment_id", -1)],
@@ -613,10 +639,7 @@ class AppointmentService:
             else 1
         )
 
-        # -------------------------------------------------------------
-        # 9. Create MongoDB appointment document
-        # -------------------------------------------------------------
-
+        # 9. Create appointment
         appointment = {
             "appointment_id": next_appointment_id,
             "appointment_ref": cls.generate_ref(
@@ -631,13 +654,12 @@ class AppointmentService:
             "reason_for_visit": reason_for_visit,
         }
 
-        # -------------------------------------------------------------
         # 10. Save appointment
-        # -------------------------------------------------------------
-
         cls.repo.add(appointment)
 
-        return cls.repo.refresh(appointment)
+        return cls.repo.refresh(
+            appointment
+        )
 
     @classmethod
     def list_for_guardian(
@@ -693,7 +715,9 @@ class AppointmentService:
 
         appointments_collection.update_one(
             {
-                "appointment_id": appointment["appointment_id"]
+                "appointment_id": appointment[
+                    "appointment_id"
+                ]
             },
             {
                 "$set": {
@@ -708,9 +732,12 @@ class AppointmentService:
                 "status": "cancelled",
             }
         )
+
+
 # =====================================================================
-#  USER
+# USER
 # =====================================================================
+
 class UserService:
 
     userRepo = UserRepository
@@ -720,7 +747,10 @@ class UserService:
         cls,
         user_id: int,
     ):
-        user = cls.userRepo.get_by_id(user_id)
+
+        user = cls.userRepo.get_by_id(
+            user_id
+        )
 
         if not user:
             raise HTTPException(
@@ -735,7 +765,10 @@ class UserService:
         cls,
         username: str,
     ):
-        user = cls.userRepo.get_by_username(username)
+
+        user = cls.userRepo.get_by_username(
+            username
+        )
 
         if not user:
             raise HTTPException(
@@ -750,6 +783,7 @@ class UserService:
         cls,
         payload: schemas.UserCreateRequest,
     ):
+
         existing_user = cls.userRepo.get_by_username(
             payload.username
         )
@@ -757,13 +791,16 @@ class UserService:
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="A user with this username already exists",
+                detail=(
+                    "A user with this username "
+                    "already exists"
+                ),
             )
 
-        # Generate the next user_id
+        # Generate next user_id
         last_user = users_collection.find_one(
             {},
-            sort=[("user_id", -1)]
+            sort=[("user_id", -1)],
         )
 
         next_user_id = (
@@ -778,11 +815,21 @@ class UserService:
             "first_name": payload.first_name,
             "last_name": payload.last_name,
             "user_type": payload.user_type,
-            "password": hash_password(payload.password),
+
+            # Used for authorization
+            "role": payload.user_type,
+
+            # User passwords use the "password" field
+            "password": hash_password(
+                payload.password
+            ),
+
             "is_active": True,
         }
 
-        cls.userRepo.adduser(user)
+        cls.userRepo.adduser(
+            user
+        )
 
         return user
 
@@ -792,8 +839,10 @@ class UserService:
         user_id: int,
         user_data,
     ):
-        # Make sure user exists
-        cls.get_user_by_id(user_id)
+
+        cls.get_user_by_id(
+            user_id
+        )
 
         changes = user_data.model_dump(
             exclude_unset=True
@@ -810,7 +859,9 @@ class UserService:
             changes,
         )
 
-        return cls.get_user_by_id(user_id)
+        return cls.get_user_by_id(
+            user_id
+        )
 
     @classmethod
     def delete_user(
@@ -818,9 +869,13 @@ class UserService:
         user_id: int,
     ) -> None:
 
-        cls.get_user_by_id(user_id)
+        cls.get_user_by_id(
+            user_id
+        )
 
-        cls.userRepo.delete_user(user_id)
+        cls.userRepo.delete_user(
+            user_id
+        )
 
     @classmethod
     def list_users(
@@ -829,6 +884,7 @@ class UserService:
         page: int,
         page_size: int,
     ):
+
         return cls.userRepo.list_users(
             search,
             page,
@@ -841,7 +897,10 @@ class UserService:
         username: str,
         password: str,
     ):
-        user = cls.userRepo.get_by_username(username)
+
+        user = cls.userRepo.get_by_username(
+            username
+        )
 
         if not user or not verify_password(
             password,
@@ -861,12 +920,16 @@ class UserService:
         new_password: str,
     ) -> None:
 
-        cls.get_user_by_id(user_id)
+        cls.get_user_by_id(
+            user_id
+        )
 
         cls.userRepo.update_user(
             user_id,
             {
-                "password": hash_password(new_password)
+                "password": hash_password(
+                    new_password
+                )
             },
         )
 
@@ -878,7 +941,9 @@ class UserService:
         new_password: str,
     ) -> None:
 
-        user = cls.get_user_by_id(user_id)
+        user = cls.get_user_by_id(
+            user_id
+        )
 
         if not verify_password(
             current_password,
@@ -892,7 +957,9 @@ class UserService:
         cls.userRepo.update_user(
             user_id,
             {
-                "password": hash_password(new_password)
+                "password": hash_password(
+                    new_password
+                )
             },
         )
 
@@ -904,7 +971,7 @@ class UserService:
 
         return create_access_token(
             user["user_id"],
-            "user",
+            user.get("role", user.get("user_type", "user")),
             token_type="user",
         )
 
@@ -913,9 +980,14 @@ class UserService:
         cls,
         token: str,
     ):
-        payload = verify_token(token)
 
-        user_id = payload.get("sub")
+        payload = verify_token(
+            token
+        )
+
+        user_id = payload.get(
+            "sub"
+        )
 
         if user_id is None:
             raise HTTPException(
@@ -926,19 +998,17 @@ class UserService:
         return cls.get_user_by_id(
             int(user_id)
         )
-   
+
 
 # =====================================================================
-#  AUTHENTICATION
-# =====================================================================
-# =====================================================================
-#  AUTHENTICATION
+# AUTHENTICATION
 # =====================================================================
 
 class AuthService:
 
     guardians = GuardianRepository
     doctors = DoctorRepository
+    users = UserRepository
 
     # -----------------------------------------------------------------
     # GUARDIAN LOGIN
@@ -964,7 +1034,10 @@ class AuthService:
                 detail="Incorrect mobile number or password",
             )
 
-        if not guardian.get("is_active", False):
+        if not guardian.get(
+            "is_active",
+            False,
+        ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This account is inactive",
@@ -979,6 +1052,54 @@ class AuthService:
             guardian["guardian_id"],
             role,
             token_type="guardian",
+        )
+
+    # -----------------------------------------------------------------
+    # ADMIN LOGIN
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def login_admin(
+        cls,
+        username: str,
+        password: str,
+    ) -> str:
+
+        user = cls.users.get_by_username(
+            username
+        )
+
+        if not user or not verify_password(
+            password,
+            user["password"],
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+            )
+
+        if not user.get(
+            "is_active",
+            False,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This account is inactive",
+            )
+
+        if user.get(
+            "role",
+            user.get("user_type"),
+        ) != "Admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required",
+            )
+
+        return create_access_token(
+            user["user_id"],
+            "Admin",
+            token_type="admin",
         )
 
     # -----------------------------------------------------------------
@@ -1005,7 +1126,10 @@ class AuthService:
                 detail="Incorrect staff ID or password",
             )
 
-        if not doctor.get("is_active", False):
+        if not doctor.get(
+            "is_active",
+            False,
+        ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This account is inactive",
@@ -1025,7 +1149,10 @@ class AuthService:
 
         return create_access_token(
             doctor["doctor_id"],
-            doctor.get("role", "doctor"),
+            doctor.get(
+                "role",
+                "doctor",
+            ),
             token_type="doctor",
         )
 
@@ -1053,7 +1180,7 @@ class AuthService:
         cls.doctors.update(
             doctor["doctor_id"],
             {
-                "password_hash": hash_password(
+                "password": hash_password(
                     new_password
                 )
             },

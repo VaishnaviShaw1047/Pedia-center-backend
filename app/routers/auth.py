@@ -1,10 +1,25 @@
 """Auth routes. HTTP only."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app import schemas
-from app.auth import get_current_doctor, get_current_user
+
+from app.auth import (
+    get_current_doctor,
+    get_current_user,
+    require_admin,
+)
+# ---------------------------------------------------------------------
+# API endpoints
+
+# This is the HTTP/API layer.
+
+# It defines URLs that the frontend/Postman/Swagger can call.
+# It does not contain business logic. It calls the service layer for that.
+# -------------------------------------------------------------------------------
+
 from app.service import AuthService
+
 
 router = APIRouter()
 
@@ -38,6 +53,27 @@ def read_me(
     current_user=Depends(get_current_user),
 ):
     return current_user
+
+# =====================================================================
+# ADMIN
+# =====================================================================
+
+@router.post(
+    "/auth/admin-login",
+    response_model=schemas.AuthTokenResponse,
+)
+def admin_login(
+    payload: schemas.AdminLoginRequest,
+):
+    token = AuthService.login_admin(
+        payload.username,
+        payload.password,
+    )
+
+    return schemas.AuthTokenResponse(
+        access_token=token,
+    )
+
 
 
 # =====================================================================

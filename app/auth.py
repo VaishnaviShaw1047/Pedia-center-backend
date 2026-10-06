@@ -5,12 +5,31 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
+# AUTHENTICATION AND AUTHORIZATION LOGIC --------------------
+# This is the security/logic layer.
+
+# It handles things like:
+
+# Hashing passwords
+# Checking passwords
+# Creating JWT tokens
+# Decoding/verifying JWT tokens
+# Finding the currently logged-in user
+# Checking whether the user is an Admin
+# Checking whether the user is a Doctor
+# Protecting endpoints
+# --------------------------------------------------
+
 from app.config import (
     SECRET_KEY,
     ALGORITHM,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
-from app.mongodb import guardians_collection, doctors_collection
+from app.mongodb import (
+    guardians_collection,
+    doctors_collection,
+    users_collection,
+)
 
 
 oauth2_scheme = OAuth2PasswordBearer(
@@ -96,44 +115,57 @@ def _decode(token: str) -> dict:
 # =====================================================================
 # CURRENT GUARDIAN
 # =====================================================================
-
 def get_current_user(
     token: str = Depends(oauth2_scheme),
 ):
     payload = _decode(token)
 
-    # Doctor token cannot access guardian endpoints
-    if payload.get("type") == "doctor":
+    token_type = payload.get("type")
+    user_id = payload.get("sub")
+
+    if user_id is None:
+        raise credentials_error
+
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        raise credentials_error
+
+    # Admin token
+    if token_type == "admin":
+        user = users_collection.find_one(
+            {
+                "user_id": user_id,
+                "is_active": True,
+            },
+            {"_id": 0},
+        )
+
+        if user is None:
+            raise credentials_error
+
+        return user
+
+    # Doctor token cannot access these endpoints
+    if token_type == "doctor":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This endpoint requires a guardian account",
         )
 
-    guardian_id = payload.get("sub")
-
-    if guardian_id is None:
-        raise credentials_error
-
-    try:
-        guardian_id = int(guardian_id)
-    except (TypeError, ValueError):
-        raise credentials_error
-
+    # Guardian token
     guardian = guardians_collection.find_one(
         {
-            "guardian_id": guardian_id,
+            "guardian_id": user_id,
             "is_active": True,
         },
-        {
-            "_id": 0,
-        },
+        {"_id": 0},
     )
 
     if guardian is None:
         raise credentials_error
 
     return guardian
-
 
 # =====================================================================
 # CURRENT DOCTOR
@@ -188,6 +220,23 @@ def require_staff(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Staff access required",
+        )
+
+    return current_user
+
+#ADMIN-----------------------------------------------------------------------
+def require_admin(
+    current_user=Depends(get_current_user),
+):
+    role = current_user.get(
+        "role",
+        current_user.get("user_type"),
+    )
+
+    if role != "Admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
         )
 
     return current_user

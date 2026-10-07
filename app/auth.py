@@ -240,3 +240,188 @@ def require_admin(
         )
 
     return current_user
+
+
+# =====================================================================
+# TREATMENT RECORD AUTHORIZATION
+# =====================================================================
+
+def require_treatment_record_creator(
+    token: str = Depends(oauth2_scheme),
+):
+    # JWT authentication: decode and validate the Bearer token
+    payload = _decode(token)
+
+    token_type = payload.get("type")
+    user_id = payload.get("sub")
+
+    if user_id is None:
+        raise credentials_error
+
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        raise credentials_error
+
+    # Authorization: only Admin and Doctor can create treatment records
+    if token_type == "admin":
+        user = users_collection.find_one(
+            {
+                "user_id": user_id,
+                "is_active": True,
+            },
+            {"_id": 0},
+        )
+
+        if user is None:
+            raise credentials_error
+
+        role = user.get(
+            "role",
+            user.get("user_type"),
+        )
+
+        if role != "Admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required",
+            )
+
+        return user
+
+       # JWT authentication + Doctor identity validation
+    if token_type == "doctor":
+        doctor = doctors_collection.find_one(
+            {
+                "doctor_id": user_id,
+                "is_active": True,
+            },
+            {"_id": 0},
+        )
+
+        if doctor is None:
+            raise credentials_error
+
+        # Authorization: mark the authenticated user as a Doctor
+        return {
+            **doctor,
+            "role": "Doctor",
+        }
+
+    # Authorization: Guardian/Patient cannot create treatment records
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Only Admin or Doctor can create treatment records",
+    )
+
+
+
+# =====================================================================
+# TREATMENT RECORD VIEW AUTHORIZATION
+# =====================================================================
+
+def require_treatment_record_viewer(
+    token: str = Depends(oauth2_scheme),
+):
+    # JWT authentication: decode and validate the Bearer token
+    payload = _decode(token)
+
+    token_type = payload.get("type")
+    user_id = payload.get("sub")
+
+    if user_id is None:
+        raise credentials_error
+
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        raise credentials_error
+
+    # Authorization: Admin can view treatment records
+    if token_type == "admin":
+
+        user = users_collection.find_one(
+            {
+                "user_id": user_id,
+                "is_active": True,
+            },
+            {"_id": 0},
+        )
+
+        if user is None:
+            raise credentials_error
+
+        role = user.get(
+            "role",
+            user.get("user_type"),
+        )
+
+        if role != "Admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required",
+            )
+
+        return user
+
+    # Authorization: Doctor can view treatment records
+    if token_type == "doctor":
+
+        doctor = doctors_collection.find_one(
+            {
+                "doctor_id": user_id,
+                "is_active": True,
+            },
+            {"_id": 0},
+        )
+
+        if doctor is None:
+            raise credentials_error
+
+        return {
+            **doctor,
+            "role": "Doctor",
+        }
+
+    # Authorization: Guardian can view treatment records
+    if token_type == "guardian":
+
+        guardian = guardians_collection.find_one(
+            {
+                "guardian_id": user_id,
+                "is_active": True,
+            },
+            {"_id": 0},
+        )
+
+        if guardian is None:
+            raise credentials_error
+
+        return {
+            **guardian,
+            "role": "Guardian",
+        }
+
+    # Authorization: Patient can view their own treatment records
+    if token_type == "patient":
+
+        patient = patients_collection.find_one(
+            {
+                "patient_id": user_id,
+                "is_active": True,
+            },
+            {"_id": 0},
+        )
+
+        if patient is None:
+            raise credentials_error
+
+        return {
+            **patient,
+            "role": "Patient",
+        }
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You are not authorized to view treatment records",
+    )

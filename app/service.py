@@ -46,6 +46,7 @@ from app.repository import (
     GuardianRepository,
     PatientRepository,
     UserRepository,
+    PatientTreatmentRecordRepository,
 )
 
 

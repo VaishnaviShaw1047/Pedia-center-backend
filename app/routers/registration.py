@@ -1,10 +1,8 @@
 """Registration route. HTTP only."""
 
-from fastapi import APIRouter, Depends, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, status
 
 from app import schemas
-from app.database import get_db
 from app.service import RegistrationService
 
 router = APIRouter()
@@ -17,13 +15,14 @@ router = APIRouter()
 )
 def register_guardian(
     payload: schemas.RegistrationRequest,
-    db: Session = Depends(get_db),
 ):
-    guardian, patients = RegistrationService.register(db, payload)
+    guardian, patients = RegistrationService.register(payload)
 
     return schemas.RegistrationResponse(
-        guardian_id=guardian.guardian_id,
-        patients=[schemas.RegisteredPatientResponse.model_validate(p) for p in patients],
+        guardian_id=guardian["guardian_id"],
+        patients=[
+            schemas.RegisteredPatientResponse.model_validate(patient)
+            for patient in patients
+        ],
         message="Registration successful",
     )
-

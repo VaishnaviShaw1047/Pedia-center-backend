@@ -60,7 +60,7 @@ class User(Base):
     last_name = Column(String(50), nullable=False)
     password = Column(String(255), nullable=False)
     user_type = Column(String(20), nullable=False, default="user")
-    # is_active = Column(Boolean, nullable=False, default=True)
+    is_active = Column(Boolean, nullable=False, default=True)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

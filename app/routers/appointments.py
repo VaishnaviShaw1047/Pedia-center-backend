@@ -2,37 +2,44 @@
 Router layer — HTTP only.
 
 Declares the route, pulls dependencies, calls the service, shapes the
-response. No queries, no rules. Compare this to the 130-line version
-before the refactor.
+response. No queries, no business rules.
 """
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy.orm import Session
 
-from app import models, schemas
+from app import schemas
 from app.auth import get_current_user
-from app.database import get_db
 from app.service import AppointmentService
 
 router = APIRouter()
 
 
-def to_out(appointment: models.Appointment) -> schemas.AppointmentResponse:
-    """Model object -> response schema. Presentation, so it belongs here."""
+def to_out(appointment: dict) -> schemas.AppointmentResponse:
+    """
+    MongoDB appointment document -> response schema.
+
+    Related doctor and patient information is populated by the
+    AppointmentRepository.
+    """
+
     return schemas.AppointmentResponse(
-        appointment_id=appointment.appointment_id,
-        appointment_ref=appointment.appointment_ref,
-        doctor_id=appointment.doctor_id,
-        doctor_name=f"{appointment.doctor.first_name} {appointment.doctor.last_name}",
-        patient_id=appointment.patient_id,
-        patient_name=f"{appointment.patient.first_name} {appointment.patient.last_name}",
-        mrn=appointment.patient.mrn,
-        scheduled_at=appointment.scheduled_at,
-        duration_minutes=appointment.duration_minutes,
-        status=appointment.status,
-        reason_for_visit=appointment.reason_for_visit,
+        appointment_id=appointment["appointment_id"],
+        appointment_ref=appointment["appointment_ref"],
+        doctor_id=appointment["doctor_id"],
+        doctor_name=appointment["doctor_name"],
+        patient_id=appointment["patient_id"],
+        patient_name=appointment["patient_name"],
+        mrn=appointment["mrn"],
+        scheduled_at=appointment["scheduled_at"],
+        duration_minutes=appointment["duration_minutes"],
+        status=appointment["status"],
+        reason_for_visit=appointment["reason_for_visit"],
     )
 
+
+# =====================================================================
+# BOOK APPOINTMENT
+# =====================================================================
 
 @router.post(
     "/appointments",
@@ -41,39 +48,55 @@ def to_out(appointment: models.Appointment) -> schemas.AppointmentResponse:
 )
 def book_appointment(
     payload: schemas.AppointmentBookingRequest,
-    db: Session = Depends(get_db),
-    current_user: models.Guardian = Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     appointment = AppointmentService.book(
-        db=db,
         guardian=current_user,
         doctor_id=payload.doctor_id,
         patient_id=payload.patient_id,
         scheduled_at=payload.scheduled_at,
         reason_for_visit=payload.reason_for_visit,
     )
+
     return to_out(appointment)
 
 
-@router.get("/appointments", response_model=list[schemas.AppointmentResponse])
+# =====================================================================
+# LIST APPOINTMENTS
+# =====================================================================
+
+@router.get(
+    "/appointments",
+    response_model=list[schemas.AppointmentResponse],
+)
 def my_appointments(
     upcoming_only: bool = Query(True),
-    db: Session = Depends(get_db),
-    current_user: models.Guardian = Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     appointments = AppointmentService.list_for_guardian(
-        db=db, guardian=current_user, upcoming_only=upcoming_only
+        guardian=current_user,
+        upcoming_only=upcoming_only,
     )
-    return [to_out(a) for a in appointments]
+
+    return [to_out(appointment) for appointment in appointments]
 
 
-@router.patch("/appointments/{ref}/cancel", response_model=schemas.AppointmentResponse)
+# =====================================================================
+# CANCEL APPOINTMENT
+# =====================================================================
+
+@router.patch(
+    "/appointments/{ref}/cancel",
+    response_model=schemas.AppointmentResponse,
+)
 def cancel_appointment(
     ref: str,
     payload: schemas.AppointmentCancelRequest,
-    db: Session = Depends(get_db),
-    current_user: models.Guardian = Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
-    appointment = AppointmentService.cancel(db=db, guardian=current_user, ref=ref)
-    return to_out(appointment)
+    appointment = AppointmentService.cancel(
+        guardian=current_user,
+        ref=ref,
+    )
 
+    return to_out(appointment)

@@ -7,13 +7,14 @@ model objects.
 
 One compromise: services raise HTTPException directly rather than a domain
 error the router would translate. Strictly a service should not know about
-HTTP status codes. Keeping them here avoids an extra layer .
+HTTP status codes. Keeping them here avoids an extra layer.
 
 Classes:
     RegistrationService
     PatientService
     DoctorService
     AppointmentService
+    UserService
     AuthService
 """
 
@@ -21,12 +22,23 @@ import uuid
 from datetime import date, datetime, time, timedelta
 
 from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 
-from app import models, schemas
+from app.mongodb import (
+    users_collection,
+    guardians_collection,
+    patients_collection,
+    doctors_collection,
+    appointments_collection,
+)
 
-from app.auth import create_access_token, hash_password, verify_password, verify_token
+from app import schemas
+
+from app.auth import (
+    create_access_token,
+    hash_password,
+    verify_password,
+    verify_token,
+)
 
 from app.repository import (
     AppointmentRepository,
@@ -38,7 +50,7 @@ from app.repository import (
 
 
 # =====================================================================
-#  REGISTRATION
+# REGISTRATION
 # =====================================================================
 
 class RegistrationService:
@@ -51,75 +63,104 @@ class RegistrationService:
         return f"PC-2026-{patient_id:06d}"
 
     @classmethod
-    def register(
-        cls, db: Session, payload
-    ) -> tuple[models.Guardian, list[models.Patient]]:
+    def register(cls, payload):
         """
-        Creates a guardian and their children in one transaction.
-        Returns both; the router turns them into a response schema.
+        Creates a guardian and their children in MongoDB.
         """
 
-        if cls.guardians.get_by_mobile(db, payload.mobile_number):
+        # 1. Check whether mobile number is already registered
+        if cls.guardians.get_by_mobile(payload.mobile_number):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="This mobile number is already registered",
             )
 
-        guardian = models.Guardian(
-            first_name=payload.first_name,
-            last_name=payload.last_name,
-            relationship_to_child=payload.relationship_to_child,
-            mobile_number=payload.mobile_number,
-            email=payload.email,
-            password_hash=hash_password(payload.password),
-            address_line1=payload.address_line1,
-            address_line2=payload.address_line2,
-            city=payload.city,
-            state=payload.state,
-            pincode=payload.pincode,
-            preferred_language=payload.preferred_language,
-            terms_accepted=payload.terms_accepted,
-            health_data_consent=payload.health_data_consent,
+        # 2. Generate the next guardian_id
+        last_guardian = guardians_collection.find_one(
+            {},
+            sort=[("guardian_id", -1)],
         )
 
-        # flush assigns guardian_id, needed as the children's foreign key
-        cls.guardians.add(db, guardian)
+        next_guardian_id = (
+            last_guardian["guardian_id"] + 1
+            if last_guardian
+            else 1
+        )
 
-        created: list[models.Patient] = []
+        # 3. Create guardian document
+        guardian = {
+            "guardian_id": next_guardian_id,
+            "first_name": payload.first_name,
+            "last_name": payload.last_name,
+            "role": "parent",
+            "relationship_to_child": payload.relationship_to_child,
+            "mobile_number": payload.mobile_number,
+            "email": payload.email,
+            "password_hash": hash_password(payload.password),
+            "address_line1": payload.address_line1,
+            "address_line2": payload.address_line2,
+            "city": payload.city,
+            "state": payload.state,
+            "pincode": payload.pincode,
+            "preferred_language": payload.preferred_language,
+            "terms_accepted": payload.terms_accepted,
+            "health_data_consent": payload.health_data_consent,
+            "is_active": True,
+        }
+
+        cls.guardians.add(guardian)
+
+        # 4. Create patients
+        created = []
 
         for child in payload.children:
-            patient = models.Patient(
-                patient_uid=str(uuid.uuid4()),
-                mrn="",
-                guardian_id=guardian.guardian_id,
-                first_name=child.first_name,
-                last_name=child.last_name,
-                date_of_birth=child.date_of_birth,
-                gender=child.gender,
-                abha_id=child.abha_id,
-                aadhaar_number=child.aadhaar_number,
-                blood_group=child.blood_group,
-                known_allergies=child.known_allergies,
-                existing_conditions=child.existing_conditions,
-                current_medications=child.current_medications,
-                immunization_status=child.immunization_status,
-                referred_by=child.referred_by,
+
+            last_patient = patients_collection.find_one(
+                {},
+                sort=[("patient_id", -1)],
             )
-            
 
-            # flush assigns patient_id, which the MRN is derived from
-            cls.patients.add(db, patient)
-            patient.mrn = cls.generate_mrn(patient.patient_id)
+            next_patient_id = (
+                last_patient["patient_id"] + 1
+                if last_patient
+                else 1
+            )
+
+            patient = {
+                "patient_id": next_patient_id,
+                "patient_uid": str(uuid.uuid4()),
+                "mrn": cls.generate_mrn(next_patient_id),
+                "guardian_id": next_guardian_id,
+                "guardian_name": (
+                    f"{payload.first_name} {payload.last_name}"
+                ),
+                "guardian_mobile_number": payload.mobile_number,
+                "first_name": child.first_name,
+                "last_name": child.last_name,
+                "date_of_birth": datetime.combine(
+                    child.date_of_birth,
+                    datetime.min.time(),
+                ),
+                "gender": child.gender,
+                "abha_id": child.abha_id,
+                "aadhaar_number": child.aadhaar_number,
+                "blood_group": child.blood_group,
+                "known_allergies": child.known_allergies,
+                "existing_conditions": child.existing_conditions,
+                "current_medications": child.current_medications,
+                "immunization_status": child.immunization_status,
+                "referred_by": child.referred_by,
+                "is_active": True,
+            }
+
+            cls.patients.add(patient)
             created.append(patient)
-
-        # one commit: the whole registration is atomic
-        cls.guardians.commit(db)
 
         return guardian, created
 
 
 # =====================================================================
-#  PATIENT
+# PATIENT
 # =====================================================================
 
 class PatientService:
@@ -128,43 +169,63 @@ class PatientService:
 
     @classmethod
     def list_patients(
-        cls, db: Session, search: str | None, page: int, page_size: int
-    ) -> tuple[int, list[models.Patient]]:
-        """Returns (total, page of patients). Total is counted before paging."""
-        query = cls.repo.build_list_query(db, search)
+        cls,
+        search: str | None,
+        page: int,
+        page_size: int,
+    ) -> tuple[int, list[dict]]:
+
+        query = cls.repo.build_list_query(search)
         total = cls.repo.count(query)
         patients = cls.repo.page(query, page, page_size)
+
         return total, patients
 
     @classmethod
-    def get_by_mrn(cls, db: Session, mrn: str) -> models.Patient:
-        patient = cls.repo.get_by_mrn(db, mrn)
+    def get_by_mrn(
+        cls,
+        mrn: str,
+    ) -> dict:
+
+        patient = cls.repo.get_by_mrn(mrn)
+
         if not patient:
-            raise HTTPException(status_code=404, detail="Patient not found")
+            raise HTTPException(
+                status_code=404,
+                detail="Patient not found",
+            )
+
         return patient
 
     @classmethod
-    def update(cls, db: Session, mrn: str, payload) -> models.Patient:
-        patient = cls.get_by_mrn(db, mrn)
+    def update(
+        cls,
+        mrn: str,
+        payload,
+    ) -> dict:
 
-        # exclude_unset: only the fields the client actually sent.
-        # Without it, omitted fields arrive as None and wipe stored values.
-        changes = payload.model_dump(exclude_unset=True)
+        patient = cls.get_by_mrn(mrn)
+
+        changes = payload.model_dump(
+            exclude_unset=True
+        )
 
         if not changes:
             raise HTTPException(
-                status_code=400, detail="No fields provided to update"
+                status_code=400,
+                detail="No fields provided to update",
             )
 
-        for field, value in changes.items():
-            setattr(patient, field, value)
+        cls.repo.update(
+            patient["patient_id"],
+            changes,
+        )
 
-        cls.repo.commit(db)
-        return cls.repo.refresh(db, patient)
+        return cls.get_by_mrn(mrn)
 
 
 # =====================================================================
-#  DOCTOR
+# DOCTOR
 # =====================================================================
 
 class DoctorService:
@@ -172,153 +233,260 @@ class DoctorService:
     repo = DoctorRepository
 
     @staticmethod
-    def generate_staff_id(doctor_id: int) -> str:
+    def generate_staff_id(
+        doctor_id: int,
+    ) -> str:
+
         return f"DOC-2026-{doctor_id:04d}"
 
-    # ---------- creation ----------
+    # -----------------------------------------------------------------
+    # CREATE DOCTOR
+    # -----------------------------------------------------------------
 
     @classmethod
-    def create(cls, db: Session, payload) -> models.Doctor:
+    def create(
+        cls,
+        payload,
+    ):
 
-        if cls.repo.get_by_registration_no(db, payload.registration_no):
+        if cls.repo.get_by_registration_no(
+            payload.registration_no
+        ):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="A doctor with this registration number already exists",
+                detail=(
+                    "A doctor with this registration "
+                    "number already exists"
+                ),
             )
 
-        doctor = models.Doctor(
-            staff_id="",
-            first_name=payload.first_name,
-            last_name=payload.last_name,
-            registration_no=payload.registration_no,
-            qualification=payload.qualification,
-            specialty=payload.specialty,
-            experience_years=payload.experience_years,
-            languages=payload.languages,
-            consultation_fee=payload.consultation_fee,
-            available_days=payload.available_days,
-            mobile_number=payload.mobile_number,
-            email=payload.email,
-            password_hash=hash_password(payload.temporary_password),
+        last_doctor = doctors_collection.find_one(
+            {},
+            sort=[("doctor_id", -1)],
         )
 
-        cls.repo.add(db, doctor)
-        doctor.staff_id = cls.generate_staff_id(doctor.doctor_id)
-        cls.repo.commit(db)
+        next_doctor_id = (
+            last_doctor["doctor_id"] + 1
+            if last_doctor
+            else 1
+        )
 
-        return cls.repo.refresh(db, doctor)
+        doctor = {
+            "doctor_id": next_doctor_id,
+            "staff_id": cls.generate_staff_id(
+                next_doctor_id
+            ),
+            "first_name": payload.first_name,
+            "last_name": payload.last_name,
+            "registration_no": payload.registration_no,
+            "qualification": payload.qualification,
+            "specialty": payload.specialty,
+            "experience_years": payload.experience_years,
+            "languages": payload.languages,
+            "consultation_fee": payload.consultation_fee,
+            "available_days": payload.available_days,
+            "mobile_number": payload.mobile_number,
+            "email": payload.email,
+            "password_hash": hash_password(
+                payload.temporary_password
+            ),
+            "is_active": True,
+            "availability": [],
+        }
 
-    # ---------- browsing ----------
+        cls.repo.add(doctor)
+
+        return cls.repo.get_by_id(
+            next_doctor_id
+        )
+
+    # -----------------------------------------------------------------
+    # BROWSE DOCTORS
+    # -----------------------------------------------------------------
 
     @classmethod
     def browse(
         cls,
-        db: Session,
         specialty: str | None = None,
         language: str | None = None,
         max_fee: int | None = None,
         day: str | None = None,
         text: str | None = None,
-    ) -> list[models.Doctor]:
-        return cls.repo.search(db, specialty, language, max_fee, day, text)
+    ):
+
+        return cls.repo.search(
+            specialty=specialty,
+            language=language,
+            max_fee=max_fee,
+            day=day,
+            text=text,
+        )
 
     @classmethod
-    def specialties(cls, db: Session):
-        return cls.repo.specialty_counts(db)
+    def specialties(cls):
+
+        return cls.repo.specialty_counts()
 
     @classmethod
-    def get_one(cls, db: Session, doctor_id: int) -> models.Doctor:
-        doctor = cls.repo.get_active_by_id(db, doctor_id)
+    def get_one(
+        cls,
+        doctor_id: int,
+    ):
+
+        doctor = cls.repo.get_active_by_id(
+            doctor_id
+        )
+
         if not doctor:
-            raise HTTPException(status_code=404, detail="Doctor not found")
+            raise HTTPException(
+                status_code=404,
+                detail="Doctor not found",
+            )
+
         return doctor
 
-    # ---------- availability ----------
+    # -----------------------------------------------------------------
+    # AVAILABILITY
+    # -----------------------------------------------------------------
 
     @classmethod
     def set_availability(
-        cls, db: Session, doctor_id: int, payload
-    ) -> models.DoctorAvailability:
+        cls,
+        doctor_id: int,
+        payload,
+    ):
 
-        if not cls.repo.get_by_id(db, doctor_id):
-            raise HTTPException(status_code=404, detail="Doctor not found")
+        if not cls.repo.get_by_id(
+            doctor_id
+        ):
+            raise HTTPException(
+                status_code=404,
+                detail="Doctor not found",
+            )
 
         clash = cls.repo.find_overlapping_availability(
-            db, doctor_id, payload.day_of_week, payload.start_time, payload.end_time
+            doctor_id,
+            payload.day_of_week,
+            payload.start_time,
+            payload.end_time,
         )
+
         if clash:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="This overlaps an existing availability block for that day",
+                detail=(
+                    "This overlaps an existing availability "
+                    "block for that day"
+                ),
             )
 
-        availability = models.DoctorAvailability(
-            doctor_id=doctor_id,
-            day_of_week=payload.day_of_week,
-            start_time=payload.start_time,
-            end_time=payload.end_time,
-            slot_minutes=payload.slot_minutes,
+        availability = {
+            "day_of_week": payload.day_of_week,
+            "start_time": payload.start_time,
+            "end_time": payload.end_time,
+            "slot_minutes": payload.slot_minutes,
+            "is_active": True,
+        }
+
+        return cls.repo.add_availability(
+            doctor_id,
+            availability,
         )
 
-        cls.repo.add_availability(db, availability)
-        cls.repo.commit(db)
+    @classmethod
+    def list_availability(
+        cls,
+        doctor_id: int,
+    ):
 
-        return cls.repo.refresh(db, availability)
+        if not cls.repo.get_active_by_id(
+            doctor_id
+        ):
+            raise HTTPException(
+                status_code=404,
+                detail="Doctor not found",
+            )
+
+        return cls.repo.list_availability(
+            doctor_id
+        )
+
+    # -----------------------------------------------------------------
+    # FREE SLOTS
+    # -----------------------------------------------------------------
 
     @classmethod
-    def list_availability(cls, db: Session, doctor_id: int):
-        return cls.repo.list_availability(db, doctor_id)
-
-    # ---------- slots ----------
-
-    @classmethod
-    def free_slots(cls, db: Session, doctor_id: int, slot_date: date):
-        """
-        Generate every slot the rules produce for that weekday, then
-        subtract the ones already booked and any that have already passed.
-        """
+    def free_slots(
+        cls,
+        doctor_id: int,
+        slot_date: date,
+    ):
 
         if slot_date < date.today():
             raise HTTPException(
-                status_code=400, detail="Cannot look up slots in the past"
+                status_code=400,
+                detail="Cannot look up slots in the past",
             )
 
-        doctor = cls.get_one(db, doctor_id)
+        doctor = cls.get_one(
+            doctor_id
+        )
+
         weekday = slot_date.weekday()
 
-        rules = cls.repo.get_availability_for_day(db, doctor_id, weekday)
+        rules = cls.repo.get_availability_for_day(
+            doctor_id,
+            weekday,
+        )
 
         generated: list[datetime] = []
-        for rule in rules:
-            cursor = datetime.combine(slot_date, rule.start_time)
-            day_end = datetime.combine(slot_date, rule.end_time)
-            step = timedelta(minutes=rule.slot_minutes)
 
-            # cursor + step: the slot must END within the block, or a
-            # 12:50 start would overrun a 13:00 finish
+        for rule in rules:
+
+            cursor = datetime.combine(
+                slot_date,
+                rule["start_time"],
+            )
+
+            day_end = datetime.combine(
+                slot_date,
+                rule["end_time"],
+            )
+
+            step = timedelta(
+                minutes=rule["slot_minutes"]
+            )
+
             while cursor + step <= day_end:
                 generated.append(cursor)
                 cursor += step
 
         booked = cls.repo.booked_times_on(
-            db,
             doctor_id,
-            datetime.combine(slot_date, time.min),
-            datetime.combine(slot_date, time.max),
+            datetime.combine(
+                slot_date,
+                time.min,
+            ),
+            datetime.combine(
+                slot_date,
+                time.max,
+            ),
         )
 
         now = datetime.now()
+
         free = [
             slot.strftime("%H:%M")
             for slot in sorted(generated)
-            if slot not in booked and slot > now
+            if slot not in booked
+            and slot > now
         ]
 
         return doctor, weekday, free
 
 
 # =====================================================================
-#  APPOINTMENT
+# APPOINTMENT
 # =====================================================================
 
 class AppointmentService:
@@ -326,28 +494,45 @@ class AppointmentService:
     repo = AppointmentRepository
 
     @staticmethod
-    def generate_ref(appointment_id: int) -> str:
+    def generate_ref(
+        appointment_id: int,
+    ) -> str:
+
         return f"APT-2026-{appointment_id:06d}"
 
     @classmethod
     def slot_length_if_offered(
-        cls, db: Session, doctor_id: int, when: datetime
+        cls,
+        doctor_id: int,
+        when: datetime,
     ) -> int | None:
-        """
-        Regenerate the doctor's slots for that weekday and look for an exact
-        match. Returns the slot length in minutes, or None if the time is
-        not a slot the doctor offers.
-        """
-        rules = cls.repo.get_availability_rules(db, doctor_id, when.weekday())
+
+        rules = cls.repo.get_availability_rules(
+            doctor_id,
+            when.weekday(),
+        )
 
         for rule in rules:
-            cursor = datetime.combine(when.date(), rule.start_time)
-            day_end = datetime.combine(when.date(), rule.end_time)
-            step = timedelta(minutes=rule.slot_minutes)
+
+            cursor = datetime.combine(
+                when.date(),
+                rule["start_time"],
+            )
+
+            day_end = datetime.combine(
+                when.date(),
+                rule["end_time"],
+            )
+
+            step = timedelta(
+                minutes=rule["slot_minutes"]
+            )
 
             while cursor + step <= day_end:
+
                 if cursor == when:
-                    return rule.slot_minutes
+                    return rule["slot_minutes"]
+
                 cursor += step
 
         return None
@@ -355,273 +540,596 @@ class AppointmentService:
     @classmethod
     def book(
         cls,
-        db: Session,
-        guardian: models.Guardian,
+        guardian,
         doctor_id: int,
         patient_id: int,
         scheduled_at: datetime,
         reason_for_visit: str | None,
-    ) -> models.Appointment:
+    ):
 
-        doctor = cls.repo.get_active_doctor(db, doctor_id)
-        if not doctor:
-            raise HTTPException(status_code=404, detail="Doctor not found")
-
-        # ownership: the child must belong to this guardian.
-        # 404 rather than 403 — a 403 would confirm the patient exists.
-        patient = cls.repo.get_patient_for_guardian(
-            db, patient_id, guardian.guardian_id
+        # 1. Check doctor
+        doctor = cls.repo.get_active_doctor(
+            doctor_id
         )
-        if not patient:
-            raise HTTPException(status_code=404, detail="Patient not found")
 
-        # normalise: a client sending 10:15:03 would not match a 10:15:00 slot
-        when = scheduled_at.replace(second=0, microsecond=0, tzinfo=None)
+        if not doctor:
+            raise HTTPException(
+                status_code=404,
+                detail="Doctor not found",
+            )
+
+        # 2. Get guardian_id
+        if isinstance(guardian, dict):
+            guardian_id = guardian["guardian_id"]
+        else:
+            guardian_id = guardian.guardian_id
+
+        # 3. Check patient ownership
+        patient = cls.repo.get_patient_for_guardian(
+            patient_id,
+            guardian_id,
+        )
+
+        if not patient:
+            raise HTTPException(
+                status_code=404,
+                detail="Patient not found",
+            )
+
+        # 4. Normalize appointment time
+        when = scheduled_at.replace(
+            second=0,
+            microsecond=0,
+            tzinfo=None,
+        )
 
         if when <= datetime.now():
             raise HTTPException(
-                status_code=400, detail="Appointment time must be in the future"
+                status_code=400,
+                detail="Appointment time must be in the future",
             )
 
-        slot_minutes = cls.slot_length_if_offered(db, doctor.doctor_id, when)
+        # 5. Check offered slot
+        slot_minutes = cls.slot_length_if_offered(
+            doctor["doctor_id"],
+            when,
+        )
+
         if slot_minutes is None:
             raise HTTPException(
                 status_code=400,
-                detail="That time is not an available slot for this doctor",
+                detail=(
+                    "That time is not an available "
+                    "slot for this doctor"
+                ),
             )
 
-        if cls.repo.find_slot_conflict(db, doctor.doctor_id, when):
+        # 6. Check doctor slot conflict
+        if cls.repo.find_slot_conflict(
+            doctor["doctor_id"],
+            when,
+        ):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="That slot has just been taken",
             )
 
-        if cls.repo.find_same_day_for_patient(db, patient.patient_id, when):
+        # 7. Check patient's same-day appointment
+        if cls.repo.find_same_day_for_patient(
+            patient["patient_id"],
+            when,
+        ):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="This patient already has an appointment on that day",
+                detail=(
+                    "This patient already has an "
+                    "appointment on that day"
+                ),
             )
 
-        appointment = models.Appointment(
-            appointment_ref="",
-            doctor_id=doctor.doctor_id,
-            patient_id=patient.patient_id,
-            guardian_id=guardian.guardian_id,
-            scheduled_at=when,
-            duration_minutes=slot_minutes,
-            status="requested",
-            reason_for_visit=reason_for_visit,
+        # 8. Generate appointment ID
+        last_appointment = appointments_collection.find_one(
+            {},
+            sort=[("appointment_id", -1)],
         )
 
-        try:
-            cls.repo.add(db, appointment)
-            appointment.appointment_ref = cls.generate_ref(appointment.appointment_id)
-            cls.repo.commit(db)
-        except IntegrityError:
-            # two requests passed the check at the same moment; the unique
-            # constraint on (doctor_id, scheduled_at) caught the loser
-            cls.repo.rollback(db)
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="That slot has just been taken",
-            )
+        next_appointment_id = (
+            last_appointment["appointment_id"] + 1
+            if last_appointment
+            else 1
+        )
 
-        return cls.repo.refresh(db, appointment)
+        # 9. Create appointment
+        appointment = {
+            "appointment_id": next_appointment_id,
+            "appointment_ref": cls.generate_ref(
+                next_appointment_id
+            ),
+            "doctor_id": doctor["doctor_id"],
+            "patient_id": patient["patient_id"],
+            "guardian_id": guardian_id,
+            "scheduled_at": when,
+            "duration_minutes": slot_minutes,
+            "status": "requested",
+            "reason_for_visit": reason_for_visit,
+        }
+
+        # 10. Save appointment
+        cls.repo.add(appointment)
+
+        return cls.repo.refresh(
+            appointment
+        )
 
     @classmethod
     def list_for_guardian(
-        cls, db: Session, guardian: models.Guardian, upcoming_only: bool
-    ) -> list[models.Appointment]:
-        return cls.repo.list_for_guardian(db, guardian.guardian_id, upcoming_only)
+        cls,
+        guardian,
+        upcoming_only: bool,
+    ):
+
+        if isinstance(guardian, dict):
+            guardian_id = guardian["guardian_id"]
+        else:
+            guardian_id = guardian.guardian_id
+
+        return cls.repo.list_for_guardian(
+            guardian_id,
+            upcoming_only,
+        )
 
     @classmethod
     def cancel(
-        cls, db: Session, guardian: models.Guardian, ref: str
-    ) -> models.Appointment:
+        cls,
+        guardian,
+        ref: str,
+    ):
 
-        appointment = cls.repo.get_by_ref_for_guardian(db, ref, guardian.guardian_id)
+        if isinstance(guardian, dict):
+            guardian_id = guardian["guardian_id"]
+        else:
+            guardian_id = guardian.guardian_id
+
+        appointment = cls.repo.get_by_ref_for_guardian(
+            ref,
+            guardian_id,
+        )
 
         if not appointment:
-            raise HTTPException(status_code=404, detail="Appointment not found")
-
-        if appointment.status in ("cancelled", "completed"):
             raise HTTPException(
-                status_code=400,
-                detail=f"This appointment is already {appointment.status}",
+                status_code=404,
+                detail="Appointment not found",
             )
 
-        appointment.status = "cancelled"
-        cls.repo.commit(db)
+        if appointment["status"] in (
+            "cancelled",
+            "completed",
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"This appointment is already "
+                    f"{appointment['status']}"
+                ),
+            )
 
-        return cls.repo.refresh(db, appointment)
+        appointments_collection.update_one(
+            {
+                "appointment_id": appointment[
+                    "appointment_id"
+                ]
+            },
+            {
+                "$set": {
+                    "status": "cancelled"
+                }
+            },
+        )
+
+        return cls.repo.refresh(
+            {
+                **appointment,
+                "status": "cancelled",
+            }
+        )
 
 
 # =====================================================================
-# user
+# USER
+# =====================================================================
+
 class UserService:
-    
+
     userRepo = UserRepository
 
     @classmethod
-    def get_user_by_id(cls, db: Session, user_id: int) -> models.User:
-        user = cls.userRepo.get_by_id(db, user_id)
+    def get_user_by_id(
+        cls,
+        user_id: int,
+    ):
+
+        user = cls.userRepo.get_by_id(
+            user_id
+        )
+
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(
+                status_code=404,
+                detail="User not found",
+            )
+
         return user
 
-    
     @classmethod
-    def get_user_by_username(cls, db: Session, username: str) -> models.User:
-        user = cls.userRepo.get_by_username(db, username)
+    def get_user_by_username(
+        cls,
+        username: str,
+    ):
+
+        user = cls.userRepo.get_by_username(
+            username
+        )
+
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(
+                status_code=404,
+                detail="User not found",
+            )
+
         return user
 
-    
     @classmethod
-    def create_user(cls, db: Session, payload: schemas.UserCreateRequest) -> models.User:
-        existing_user = cls.userRepo.get_by_username(db, payload.username)
+    def create_user(
+        cls,
+        payload: schemas.UserCreateRequest,
+    ):
+
+        existing_user = cls.userRepo.get_by_username(
+            payload.username
+        )
+
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="A user with this username already exists",
+                detail=(
+                    "A user with this username "
+                    "already exists"
+                ),
             )
 
-        user = models.User(
-    username=payload.username,
-    first_name=payload.first_name,
-    last_name=payload.last_name,
-    user_type=payload.user_type,
-    password_hash=hash_password(payload.password),
-    is_active=True,
-)
+        # Generate next user_id
+        last_user = users_collection.find_one(
+            {},
+            sort=[("user_id", -1)],
+        )
 
-        cls.userRepo.add(db, user)
-        cls.userRepo.commit(db)
+        next_user_id = (
+            last_user["user_id"] + 1
+            if last_user
+            else 1
+        )
 
-        return cls.userRepo.refresh(db, user)
+        user = {
+            "user_id": next_user_id,
+            "username": payload.username,
+            "first_name": payload.first_name,
+            "last_name": payload.last_name,
+            "user_type": payload.user_type,
+
+            # Used for authorization
+            "role": payload.user_type,
+
+            # User passwords use the "password" field
+            "password": hash_password(
+                payload.password
+            ),
+
+            "is_active": True,
+        }
+
+        cls.userRepo.adduser(
+            user
+        )
+
+        return user
+
     @classmethod
-    def update_user(cls, db: Session, user_id: int, user_data) -> models.User:
-        user = cls.get_user_by_id(db, user_id)
+    def update_user(
+        cls,
+        user_id: int,
+        user_data,
+    ):
 
-        # exclude_unset: only the fields the client actually sent.
-        changes = user_data.model_dump(exclude_unset=True)
+        cls.get_user_by_id(
+            user_id
+        )
+
+        changes = user_data.model_dump(
+            exclude_unset=True
+        )
 
         if not changes:
             raise HTTPException(
-                status_code=400, detail="No fields provided to update"
+                status_code=400,
+                detail="No fields provided to update",
             )
 
-        for field, value in changes.items():
-            setattr(user, field, value)
+        cls.userRepo.update_user(
+            user_id,
+            changes,
+        )
 
-        cls.userRepo.commit(db)
-        return cls.userRepo.refresh(db, user)
-
-    @classmethod
-    def delete_user(cls, db: Session, user_id: int) -> None:
-        user = cls.get_user_by_id(db, user_id)
-        cls.userRepo.delete(db, user)
-        cls.userRepo.commit(db)    
+        return cls.get_user_by_id(
+            user_id
+        )
 
     @classmethod
-    def list_users(cls, db: Session, search: str | None, page: int, page_size: int) -> tuple[int, list[models.User]]:
-        """Returns (total, page of users). Total is counted before paging."""
-        query = cls.userRepo.build_list_query(db, search)
-        total = cls.userRepo.count(query)
-        users = cls.userRepo.page(query, page, page_size)
-        return total, users
+    def delete_user(
+        cls,
+        user_id: int,
+    ) -> None:
+
+        cls.get_user_by_id(
+            user_id
+        )
+
+        cls.userRepo.delete_user(
+            user_id
+        )
+
     @classmethod
-    def authenticate_user(cls, db: Session, email: str, password: str) -> models.User:
-        user = cls.userRepo.get_by_username(db, email)
-        if not user or not verify_password(password, user.password_hash):
+    def list_users(
+        cls,
+        search: str | None,
+        page: int,
+        page_size: int,
+    ):
+
+        return cls.userRepo.list_users(
+            search,
+            page,
+            page_size,
+        )
+
+    @classmethod
+    def authenticate_user(
+        cls,
+        username: str,
+        password: str,
+    ):
+
+        user = cls.userRepo.get_by_username(
+            username
+        )
+
+        if not user or not verify_password(
+            password,
+            user["password"],
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or password",
+                detail="Incorrect username or password",
             )
-        return user 
+
+        return user
 
     @classmethod
-    def reset_user_password(cls, db: Session, user_id: int, new_password: str) -> None:
-        user = cls.get_user_by_id(db, user_id)
-        user.password_hash = hash_password(new_password)
-        cls.userRepo.commit(db)
+    def reset_user_password(
+        cls,
+        user_id: int,
+        new_password: str,
+    ) -> None:
+
+        cls.get_user_by_id(
+            user_id
+        )
+
+        cls.userRepo.update_user(
+            user_id,
+            {
+                "password": hash_password(
+                    new_password
+                )
+            },
+        )
 
     @classmethod
-    def change_user_password(cls, db: Session, user_id: int, current_password: str, new_password: str) -> None:
-        user = cls.get_user_by_id(db, user_id)
+    def change_user_password(
+        cls,
+        user_id: int,
+        current_password: str,
+        new_password: str,
+    ) -> None:
 
-        if not verify_password(current_password, user.password_hash):
+        user = cls.get_user_by_id(
+            user_id
+        )
+
+        if not verify_password(
+            current_password,
+            user["password"],
+        ):
             raise HTTPException(
-                status_code=400, detail="Current password is incorrect"
+                status_code=400,
+                detail="Current password is incorrect",
             )
 
-        user.password_hash = hash_password(new_password)
-        cls.userRepo.commit(db)
+        cls.userRepo.update_user(
+            user_id,
+            {
+                "password": hash_password(
+                    new_password
+                )
+            },
+        )
+
     @classmethod
-    def generate_user_token(cls, user: models.User) -> str:
-        return create_access_token(user.user_id, "user", token_type="user")
-    
-    
+    def generate_user_token(
+        cls,
+        user,
+    ) -> str:
+
+        return create_access_token(
+            user["user_id"],
+            user.get("role", user.get("user_type", "user")),
+            token_type="user",
+        )
+
     @classmethod
-    def verify_user_token(cls,db:Session, token: str) -> models.User:
-        payload = verify_token(token)
-        user_id = payload.get("sub")
+    def verify_user_token(
+        cls,
+        token: str,
+    ):
+
+        payload = verify_token(
+            token
+        )
+
+        user_id = payload.get(
+            "sub"
+        )
+
         if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalidyes token",
+                detail="Invalid token",
             )
-        return cls.get_user_by_id(db, user_id)
-#  AUTH
+
+        return cls.get_user_by_id(
+            int(user_id)
+        )
+
+
+# =====================================================================
+# AUTHENTICATION
 # =====================================================================
 
 class AuthService:
-    """
-    Login rules only. Token creation and the request dependencies stay in
-    app/auth.py — those are infrastructure used by every router, not a
-    feature service.
-    """
 
     guardians = GuardianRepository
     doctors = DoctorRepository
+    users = UserRepository
 
-    # ---------- guardian ----------
+    # -----------------------------------------------------------------
+    # GUARDIAN LOGIN
+    # -----------------------------------------------------------------
 
     @classmethod
-    def login_guardian(cls, db: Session, mobile_number: str, password: str) -> str:
-        guardian = cls.guardians.get_by_mobile(db, mobile_number)
+    def login_guardian(
+        cls,
+        mobile_number: str,
+        password: str,
+    ) -> str:
 
-        # same message for both failures: naming which one leaks
-        # whether that mobile number is registered
-        if not guardian or not verify_password(password, guardian.password_hash):
+        guardian = cls.guardians.get_by_mobile(
+            mobile_number
+        )
+
+        if not guardian or not verify_password(
+            password,
+            guardian["password_hash"],
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect mobile number or password",
             )
 
-        if not guardian.is_active:
+        if not guardian.get(
+            "is_active",
+            False,
+        ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This account is inactive",
             )
 
-        return create_access_token(guardian.guardian_id, guardian.role)
+        role = guardian.get(
+            "role",
+            "guardian",
+        )
 
-    # ---------- doctor ----------
+        return create_access_token(
+            guardian["guardian_id"],
+            role,
+            token_type="guardian",
+        )
+
+    # -----------------------------------------------------------------
+    # ADMIN LOGIN
+    # -----------------------------------------------------------------
 
     @classmethod
-    def login_doctor(cls, db: Session, staff_id: str, password: str) -> models.Doctor:
-        """Returns the doctor; the router builds the response with the token."""
-        doctor = cls.doctors.get_by_staff_id(db, staff_id.strip().upper())
+    def login_admin(
+        cls,
+        username: str,
+        password: str,
+    ) -> str:
 
-        if not doctor or not verify_password(password, doctor.password_hash):
+        user = cls.users.get_by_username(
+            username
+        )
+
+        if not user or not verify_password(
+            password,
+            user["password"],
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+            )
+
+        if not user.get(
+            "is_active",
+            False,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This account is inactive",
+            )
+
+        if user.get(
+            "role",
+            user.get("user_type"),
+        ) != "Admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required",
+            )
+
+        return create_access_token(
+            user["user_id"],
+            "Admin",
+            token_type="admin",
+        )
+
+    # -----------------------------------------------------------------
+    # DOCTOR LOGIN
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def login_doctor(
+        cls,
+        staff_id: str,
+        password: str,
+    ):
+
+        doctor = cls.doctors.get_by_staff_id(
+            staff_id.strip().upper()
+        )
+
+        if not doctor or not verify_password(
+            password,
+            doctor["password_hash"],
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect staff ID or password",
             )
 
-        if not doctor.is_active:
+        if not doctor.get(
+            "is_active",
+            False,
+        ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="This account is inactive",
@@ -629,26 +1137,51 @@ class AuthService:
 
         return doctor
 
-    @staticmethod
-    def doctor_token(doctor: models.Doctor) -> str:
-        # token_type="doctor" is what stops this token being accepted
-        # by guardian endpoints
-        return create_access_token(doctor.doctor_id, "doctor", token_type="doctor")
+    # -----------------------------------------------------------------
+    # DOCTOR TOKEN
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def doctor_token(
+        cls,
+        doctor,
+    ) -> str:
+
+        return create_access_token(
+            doctor["doctor_id"],
+            doctor.get(
+                "role",
+                "doctor",
+            ),
+            token_type="doctor",
+        )
+
+    # -----------------------------------------------------------------
+    # DOCTOR CHANGE PASSWORD
+    # -----------------------------------------------------------------
 
     @classmethod
     def change_doctor_password(
         cls,
-        db: Session,
-        doctor: models.Doctor,
+        doctor,
         current_password: str,
         new_password: str,
     ) -> None:
-        if not verify_password(current_password, doctor.password_hash):
+
+        if not verify_password(
+            current_password,
+            doctor["password_hash"],
+        ):
             raise HTTPException(
-                status_code=400, detail="Current password is incorrect"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Current password is incorrect",
             )
 
-        doctor.password_hash = hash_password(new_password)
-        doctor.must_change_password = False
-        cls.doctors.commit(db)
-
+        cls.doctors.update(
+            doctor["doctor_id"],
+            {
+                "password": hash_password(
+                    new_password
+                )
+            },
+        )

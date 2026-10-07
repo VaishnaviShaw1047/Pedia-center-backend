@@ -138,6 +138,10 @@ class GuardianLoginRequest(BaseModel):
     mobile_number: str = Field(..., pattern=r"^[6-9]\d{9}$")
     password: str
 
+class AdminLoginRequest(BaseModel):
+    username: str
+    password: str
+
 
 class AuthTokenResponse(BaseModel):
     access_token: str
@@ -307,6 +311,7 @@ class UserCreateRequest(BaseModel):
     user_type: str = Field(..., max_length=15)
     first_name: Optional[str] = Field(None, max_length=50)
     last_name: Optional[str] = Field(None, max_length=50)
+    is_active: Optional[bool] = Field(None)
 
 class UserDetailResponse(BaseModel):
     user_id: int
@@ -314,6 +319,7 @@ class UserDetailResponse(BaseModel):
     user_type: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    is_active: Optional[bool] = None
 
     model_config = {"from_attributes": True}
 

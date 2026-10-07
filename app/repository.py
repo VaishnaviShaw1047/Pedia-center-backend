@@ -15,466 +15,896 @@ Classes:
 
 from datetime import datetime, time
 
-from sqlalchemy import func, or_
-from sqlalchemy.orm import Session, joinedload
-
-from app import models
+from app.mongodb import (
+    users_collection,
+    guardians_collection,
+    patients_collection,
+    doctors_collection,
+    appointments_collection,
+)
 
 
 # =====================================================================
 #  GUARDIAN
 # =====================================================================
-
 class GuardianRepository:
 
     @staticmethod
-    def get_by_mobile(db: Session, mobile_number: str) -> models.Guardian | None:
-        return (
-            db.query(models.Guardian)
-            .filter(models.Guardian.mobile_number == mobile_number)
-            .first()
+    def get_by_mobile(mobile_number: str):
+        return guardians_collection.find_one(
+            {"mobile_number": mobile_number},
+            {"_id": 0},
         )
 
     @staticmethod
-    def get_by_id(db: Session, guardian_id: int) -> models.Guardian | None:
-        return (
-            db.query(models.Guardian)
-            .filter(models.Guardian.guardian_id == guardian_id)
-            .first()
+    def get_by_id(guardian_id: int):
+        return guardians_collection.find_one(
+            {"guardian_id": guardian_id},
+            {"_id": 0},
         )
 
     @staticmethod
-    def add(db: Session, guardian: models.Guardian) -> models.Guardian:
-        """Stage and flush so the database assigns guardian_id."""
-        db.add(guardian)
-        db.flush()
+    def add(guardian: dict):
+        guardians_collection.insert_one(guardian)
         return guardian
 
     @staticmethod
-    def commit(db: Session) -> None:
-        db.commit()
+    def update(guardian_id: int, update_data: dict):
+        guardians_collection.update_one(
+            {"guardian_id": guardian_id},
+            {"$set": update_data},
+        )
+
+        return GuardianRepository.get_by_id(guardian_id)
 
     @staticmethod
-    def rollback(db: Session) -> None:
-        db.rollback()
+    def delete(guardian_id: int):
+        return guardians_collection.delete_one(
+            {"guardian_id": guardian_id},
+        )
+
+    @staticmethod
+    def commit():
+        pass
+
+    @staticmethod
+    def rollback():
+        pass
 
 
 # =====================================================================
 #  PATIENT
 # =====================================================================
-
 class PatientRepository:
 
     @staticmethod
-    def add(db: Session, patient: models.Patient) -> models.Patient:
-        """Stage and flush so the database assigns patient_id."""
-        db.add(patient)
-        db.flush()
+    def add(patient: dict):
+        patients_collection.insert_one(patient)
         return patient
 
     @staticmethod
-    def get_by_mrn(db: Session, mrn: str) -> models.Patient | None:
-        return db.query(models.Patient).filter(models.Patient.mrn == mrn).first()
+    def get_by_mrn(mrn: str):
+        return patients_collection.find_one(
+            {"mrn": mrn},
+            {"_id": 0},
+        )
 
     @staticmethod
     def get_for_guardian(
-        db: Session, patient_id: int, guardian_id: int
-    ) -> models.Patient | None:
-        """
-        The ownership query. Both conditions in one filter, so the check
-        cannot be forgotten — it is part of finding the record at all.
-        """
-        return (
-            db.query(models.Patient)
-            .filter(
-                models.Patient.patient_id == patient_id,
-                models.Patient.guardian_id == guardian_id,
-                models.Patient.is_active == True,
-            )
-            .first()
+        patient_id: int,
+        guardian_id: int,
+    ):
+        return patients_collection.find_one(
+            {
+                "patient_id": patient_id,
+                "guardian_id": guardian_id,
+                "is_active": True,
+            },
+            {"_id": 0},
         )
 
     @staticmethod
-    def build_list_query(db: Session, search: str | None):
-        """
-        Returns an unexecuted query so the service can count and paginate
-        against the same filters. joinedload avoids the N+1 problem when
-        building guardian_name for each row.
-        """
-        query = (
-            db.query(models.Patient)
-            .options(joinedload(models.Patient.guardian))
-            .filter(models.Patient.is_active == True)
-        )
+    def build_list_query(search: str | None):
+        query = {
+            "is_active": True
+        }
 
         if search:
-            term = f"%{search.strip()}%"
-            query = query.join(models.Guardian).filter(
-                or_(
-                    models.Patient.first_name.ilike(term),
-                    models.Patient.last_name.ilike(term),
-                    models.Patient.mrn.ilike(term),
-                    models.Guardian.mobile_number.ilike(term),
-                )
-            )
+            search = search.strip()
+
+            query["$or"] = [
+                {"first_name": {"$regex": search, "$options": "i"}},
+                {"last_name": {"$regex": search, "$options": "i"}},
+                {"mrn": {"$regex": search, "$options": "i"}},
+                {
+                    "guardian_mobile_number": {
+                        "$regex": search,
+                        "$options": "i",
+                    }
+                },
+            ]
 
         return query
 
     @staticmethod
     def count(query) -> int:
-        return query.count()
+        return patients_collection.count_documents(query)
 
     @staticmethod
-    def page(query, page: int, page_size: int) -> list[models.Patient]:
-        return (
-            query.order_by(models.Patient.patient_id.desc())
-            .offset((page - 1) * page_size)
+    def page(
+        query,
+        page: int,
+        page_size: int,
+    ):
+        return list(
+            patients_collection.find(
+                query,
+                {"_id": 0},
+            )
+            .sort("patient_id", -1)
+            .skip((page - 1) * page_size)
             .limit(page_size)
-            .all()
         )
 
     @staticmethod
-    def commit(db: Session) -> None:
-        db.commit()
+    def update(
+        patient_id: int,
+        update_data: dict,
+    ):
+        patients_collection.update_one(
+            {"patient_id": patient_id},
+            {"$set": update_data},
+        )
+
+        return patients_collection.find_one(
+            {"patient_id": patient_id},
+            {"_id": 0},
+        )
 
     @staticmethod
-    def refresh(db: Session, patient: models.Patient) -> models.Patient:
-        db.refresh(patient)
+    def delete(patient_id: int):
+        return patients_collection.delete_one(
+            {"patient_id": patient_id}
+        )
+
+    @staticmethod
+    def commit():
+        pass
+
+    @staticmethod
+    def refresh(patient):
         return patient
 
 
 # =====================================================================
-#  DOCTOR  (and availability)
+#  DOCTOR (and embedded availability)
 # =====================================================================
-
 class DoctorRepository:
 
-    # ---------- doctors ----------
-
     @staticmethod
-    def get_by_registration_no(
-        db: Session, registration_no: str
-    ) -> models.Doctor | None:
-        return (
-            db.query(models.Doctor)
-            .filter(models.Doctor.registration_no == registration_no)
-            .first()
+    def get_by_registration_no(registration_no: str):
+        return doctors_collection.find_one(
+            {"registration_no": registration_no},
+            {"_id": 0},
         )
 
     @staticmethod
-    def get_by_id(db: Session, doctor_id: int) -> models.Doctor | None:
-        return (
-            db.query(models.Doctor)
-            .filter(models.Doctor.doctor_id == doctor_id)
-            .first()
+    def get_by_id(doctor_id: int):
+        return doctors_collection.find_one(
+            {"doctor_id": doctor_id},
+            {"_id": 0},
         )
 
     @staticmethod
-    def get_active_by_id(db: Session, doctor_id: int) -> models.Doctor | None:
-        return (
-            db.query(models.Doctor)
-            .filter(
-                models.Doctor.doctor_id == doctor_id,
-                models.Doctor.is_active == True,
-            )
-            .first()
+    def get_active_by_id(doctor_id: int):
+        return doctors_collection.find_one(
+            {
+                "doctor_id": doctor_id,
+                "is_active": True,
+            },
+            {"_id": 0},
         )
 
     @staticmethod
-    def get_by_staff_id(db: Session, staff_id: str) -> models.Doctor | None:
-        staff=db.query(models.Doctor).filter(models.Doctor.staff_id == staff_id).first()
-        return staff
+    def get_by_staff_id(staff_id: str):
+        return doctors_collection.find_one(
+            {"staff_id": staff_id},
+            {"_id": 0},
+        )
 
     @staticmethod
     def search(
-        db: Session,
         specialty: str | None = None,
         language: str | None = None,
         max_fee: int | None = None,
         day: str | None = None,
         text: str | None = None,
-    ) -> list[models.Doctor]:
-        query = db.query(models.Doctor).filter(models.Doctor.is_active == True)
+    ):
+        query = {"is_active": True}
 
         if specialty:
-            query = query.filter(models.Doctor.specialty.ilike(f"%{specialty}%"))
+            query["specialty"] = {
+                "$regex": specialty.strip(),
+                "$options": "i",
+            }
 
         if language:
-            query = query.filter(models.Doctor.languages.ilike(f"%{language}%"))
+            query["languages"] = {
+                "$regex": language.strip(),
+                "$options": "i",
+            }
 
         if max_fee is not None:
-            query = query.filter(models.Doctor.consultation_fee <= max_fee)
+            query["consultation_fee"] = {"$lte": max_fee}
 
         if day:
-            query = query.filter(models.Doctor.available_days.ilike(f"%{day}%"))
+            query["available_days"] = {
+                "$regex": day.strip(),
+                "$options": "i",
+            }
 
         if text:
-            term = f"%{text.strip()}%"
-            query = query.filter(
-                or_(
-                    models.Doctor.first_name.ilike(term),
-                    models.Doctor.last_name.ilike(term),
-                    models.Doctor.specialty.ilike(term),
-                )
-            )
+            term = text.strip()
 
-        return query.order_by(models.Doctor.experience_years.desc()).all()
+            query["$or"] = [
+                {
+                    "first_name": {
+                        "$regex": term,
+                        "$options": "i",
+                    }
+                },
+                {
+                    "last_name": {
+                        "$regex": term,
+                        "$options": "i",
+                    }
+                },
+                {
+                    "specialty": {
+                        "$regex": term,
+                        "$options": "i",
+                    }
+                },
+            ]
 
-    @staticmethod
-    def specialty_counts(db: Session):
-        """Aggregation rather than row fetching — GROUP BY with a count."""
-        return (
-            db.query(
-                models.Doctor.specialty,
-                func.count(models.Doctor.doctor_id).label("doctor_count"),
+        return list(
+            doctors_collection.find(
+                query,
+                {"_id": 0},
             )
-            .filter(models.Doctor.is_active == True)
-            .group_by(models.Doctor.specialty)
-            .order_by(models.Doctor.specialty)
-            .all()
+            .sort("experience_years", -1)
         )
 
     @staticmethod
-    def add(db: Session, doctor: models.Doctor) -> models.Doctor:
-        db.add(doctor)
-        db.flush()
+    def specialty_counts():
+        pipeline = [
+            {
+                "$match": {
+                    "is_active": True,
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$specialty",
+                    "doctor_count": {
+                        "$sum": 1,
+                    },
+                }
+            },
+            {
+                "$sort": {
+                    "_id": 1,
+                }
+            },
+        ]
+
+        return [
+            {
+                "specialty": item["_id"],
+                "doctor_count": item["doctor_count"],
+            }
+            for item in doctors_collection.aggregate(pipeline)
+        ]
+
+    @staticmethod
+    def add(doctor: dict):
+        doctors_collection.insert_one(doctor)
         return doctor
 
-    # ---------- availability ----------
+    # ---------- embedded availability ----------
+
+    @staticmethod
+    def _time_to_string(value):
+        """Convert datetime.time to a BSON-safe HH:MM:SS string."""
+        if isinstance(value, time):
+            return value.strftime("%H:%M:%S")
+
+        return value
+
+    @staticmethod
+    def _time_from_string(value):
+        """Convert stored HH:MM[:SS] strings back to datetime.time."""
+        if isinstance(value, time):
+            return value
+
+        if isinstance(value, str):
+            for fmt in ("%H:%M:%S", "%H:%M"):
+                try:
+                    return datetime.strptime(value, fmt).time()
+                except ValueError:
+                    continue
+
+        return value
+
+    @staticmethod
+    def _normalize_availability(item: dict):
+        item = dict(item)
+
+        if "start_time" in item:
+            item["start_time"] = DoctorRepository._time_from_string(
+                item["start_time"]
+            )
+
+        if "end_time" in item:
+            item["end_time"] = DoctorRepository._time_from_string(
+                item["end_time"]
+            )
+
+        return item
 
     @staticmethod
     def find_overlapping_availability(
-        db: Session, doctor_id: int, day_of_week: int, start_time, end_time
-    ) -> models.DoctorAvailability | None:
-        """
-        Standard interval overlap test:
-        existing.start < new.end AND existing.end > new.start
-        """
-        return (
-            db.query(models.DoctorAvailability)
-            .filter(
-                models.DoctorAvailability.doctor_id == doctor_id,
-                models.DoctorAvailability.day_of_week == day_of_week,
-                models.DoctorAvailability.is_active == True,
-                models.DoctorAvailability.start_time < end_time,
-                models.DoctorAvailability.end_time > start_time,
-            )
-            .first()
+        doctor_id: int,
+        day_of_week: int,
+        start_time,
+        end_time,
+    ):
+        doctor = doctors_collection.find_one(
+            {
+                "doctor_id": doctor_id,
+                "is_active": True,
+            },
+            {
+                "_id": 0,
+                "availability": 1,
+            },
         )
+
+        if not doctor:
+            return None
+
+        for item in doctor.get("availability", []):
+
+            existing_start = DoctorRepository._time_from_string(
+                item.get("start_time")
+            )
+
+            existing_end = DoctorRepository._time_from_string(
+                item.get("end_time")
+            )
+
+            if (
+                item.get("day_of_week") == day_of_week
+                and item.get("is_active", True)
+                and existing_start < end_time
+                and existing_end > start_time
+            ):
+                return DoctorRepository._normalize_availability(item)
+
+        return None
 
     @staticmethod
     def get_availability_for_day(
-        db: Session, doctor_id: int, weekday: int
-    ) -> list[models.DoctorAvailability]:
-        return (
-            db.query(models.DoctorAvailability)
-            .filter(
-                models.DoctorAvailability.doctor_id == doctor_id,
-                models.DoctorAvailability.day_of_week == weekday,
-                models.DoctorAvailability.is_active == True,
+        doctor_id: int,
+        weekday: int,
+    ):
+        doctor = doctors_collection.find_one(
+            {
+                "doctor_id": doctor_id,
+                "is_active": True,
+            },
+            {
+                "_id": 0,
+                "availability": 1,
+            },
+        )
+
+        if not doctor:
+            return []
+
+        availability = [
+            DoctorRepository._normalize_availability(item)
+            for item in doctor.get("availability", [])
+            if (
+                item.get("day_of_week") == weekday
+                and item.get("is_active", True)
             )
-            .all()
+        ]
+
+        return sorted(
+            availability,
+            key=lambda item: item.get("start_time"),
         )
 
     @staticmethod
-    def list_availability(
-        db: Session, doctor_id: int
-    ) -> list[models.DoctorAvailability]:
-        return (
-            db.query(models.DoctorAvailability)
-            .filter(
-                models.DoctorAvailability.doctor_id == doctor_id,
-                models.DoctorAvailability.is_active == True,
-            )
-            .order_by(
-                models.DoctorAvailability.day_of_week,
-                models.DoctorAvailability.start_time,
-            )
-            .all()
+    def list_availability(doctor_id: int):
+        doctor = doctors_collection.find_one(
+            {
+                "doctor_id": doctor_id,
+                "is_active": True,
+            },
+            {
+                "_id": 0,
+                "availability": 1,
+            },
+        )
+
+        if not doctor:
+            return []
+
+        availability = [
+            DoctorRepository._normalize_availability(item)
+            for item in doctor.get("availability", [])
+            if item.get("is_active", True)
+        ]
+
+        return sorted(
+            availability,
+            key=lambda item: (
+                item.get("day_of_week", 0),
+                item.get("start_time"),
+            ),
         )
 
     @staticmethod
     def add_availability(
-        db: Session, availability: models.DoctorAvailability
-    ) -> models.DoctorAvailability:
-        db.add(availability)
-        return availability
+        doctor_id: int,
+        availability: dict,
+    ):
+        availability = dict(availability)
 
-    @staticmethod
-    def booked_times_on(db: Session, doctor_id: int, day_start, day_end) -> set:
-        rows = (
-            db.query(models.Appointment.scheduled_at)
-            .filter(
-                models.Appointment.doctor_id == doctor_id,
-                models.Appointment.scheduled_at >= day_start,
-                models.Appointment.scheduled_at <= day_end,
-                models.Appointment.status.in_(["requested", "confirmed"]),
-            )
-            .all()
+        # Generate availability ID
+        doctor = doctors_collection.find_one(
+            {"doctor_id": doctor_id},
+            {
+                "_id": 0,
+                "availability": 1,
+            },
         )
-        return {row.scheduled_at for row in rows}
 
-    # ---------- transaction ----------
+        existing = doctor.get("availability", []) if doctor else []
+
+        next_availability_id = (
+            max(
+                (
+                    item.get("availability_id", 0)
+                    for item in existing
+                ),
+                default=0,
+            )
+            + 1
+        )
+
+        availability["availability_id"] = next_availability_id
+        availability["doctor_id"] = doctor_id
+
+        # Convert datetime.time to MongoDB-safe strings
+        if "start_time" in availability:
+            availability["start_time"] = (
+                DoctorRepository._time_to_string(
+                    availability["start_time"]
+                )
+            )
+
+        if "end_time" in availability:
+            availability["end_time"] = (
+                DoctorRepository._time_to_string(
+                    availability["end_time"]
+                )
+            )
+
+        doctors_collection.update_one(
+            {"doctor_id": doctor_id},
+            {
+                "$push": {
+                    "availability": availability
+                }
+            },
+        )
+
+        return DoctorRepository._normalize_availability(
+            availability
+        )
+
+    # ---------- appointments ----------
 
     @staticmethod
-    def commit(db: Session) -> None:
-        db.commit()
+    def booked_times_on(
+        doctor_id: int,
+        day_start,
+        day_end,
+    ) -> set:
+        rows = appointments_collection.find(
+            {
+                "doctor_id": doctor_id,
+                "scheduled_at": {
+                    "$gte": day_start,
+                    "$lte": day_end,
+                },
+                "status": {
+                    "$in": [
+                        "requested",
+                        "confirmed",
+                    ],
+                },
+            },
+            {
+                "_id": 0,
+                "scheduled_at": 1,
+            },
+        )
+
+        return {
+            row["scheduled_at"]
+            for row in rows
+            if row.get("scheduled_at") is not None
+        }
 
     @staticmethod
-    def refresh(db: Session, obj):
-        db.refresh(obj)
+    def commit():
+        pass
+
+    @staticmethod
+    def refresh(obj):
         return obj
 
 
 # =====================================================================
 #  APPOINTMENT
 # =====================================================================
-
 class AppointmentRepository:
 
-    # ---------- lookups used before booking ----------
-
     @staticmethod
-    def get_active_doctor(db: Session, doctor_id: int) -> models.Doctor | None:
-        return DoctorRepository.get_active_by_id(db, doctor_id)
+    def get_active_doctor(doctor_id: int):
+        return DoctorRepository.get_active_by_id(doctor_id)
 
     @staticmethod
     def get_patient_for_guardian(
-        db: Session, patient_id: int, guardian_id: int
-    ) -> models.Patient | None:
-        return PatientRepository.get_for_guardian(db, patient_id, guardian_id)
+        patient_id: int,
+        guardian_id: int,
+    ):
+        return PatientRepository.get_for_guardian(
+            patient_id,
+            guardian_id,
+        )
 
     @staticmethod
     def get_availability_rules(
-        db: Session, doctor_id: int, weekday: int
-    ) -> list[models.DoctorAvailability]:
-        return DoctorRepository.get_availability_for_day(db, doctor_id, weekday)
+        doctor_id: int,
+        weekday: int,
+    ):
+        return DoctorRepository.get_availability_for_day(
+            doctor_id,
+            weekday,
+        )
 
     # ---------- conflict checks ----------
 
     @staticmethod
     def find_slot_conflict(
-        db: Session, doctor_id: int, when: datetime
-    ) -> models.Appointment | None:
-        return (
-            db.query(models.Appointment)
-            .filter(
-                models.Appointment.doctor_id == doctor_id,
-                models.Appointment.scheduled_at == when,
-                models.Appointment.status.in_(["requested", "confirmed"]),
-            )
-            .first()
+        doctor_id: int,
+        when: datetime,
+    ):
+        return appointments_collection.find_one(
+            {
+                "doctor_id": doctor_id,
+                "scheduled_at": when,
+                "status": {
+                    "$in": [
+                        "requested",
+                        "confirmed",
+                    ],
+                },
+            },
+            {"_id": 0},
         )
 
     @staticmethod
     def find_same_day_for_patient(
-        db: Session, patient_id: int, day: datetime
-    ) -> models.Appointment | None:
-        day_start = datetime.combine(day.date(), time.min)
-        day_end = datetime.combine(day.date(), time.max)
+        patient_id: int,
+        day: datetime,
+    ):
+        day_start = datetime.combine(
+            day.date(),
+            time.min,
+        )
 
-        return (
-            db.query(models.Appointment)
-            .filter(
-                models.Appointment.patient_id == patient_id,
-                models.Appointment.scheduled_at >= day_start,
-                models.Appointment.scheduled_at <= day_end,
-                models.Appointment.status.in_(["requested", "confirmed"]),
-            )
-            .first()
+        day_end = datetime.combine(
+            day.date(),
+            time.max,
+        )
+
+        return appointments_collection.find_one(
+            {
+                "patient_id": patient_id,
+                "scheduled_at": {
+                    "$gte": day_start,
+                    "$lte": day_end,
+                },
+                "status": {
+                    "$in": [
+                        "requested",
+                        "confirmed",
+                    ],
+                },
+            },
+            {"_id": 0},
         )
 
     # ---------- reads ----------
 
     @staticmethod
+    def _with_related_data(
+        appointment: dict | None,
+    ):
+        """
+        Add doctor and patient information to an appointment response.
+
+        MongoDB does not perform SQLAlchemy joinedload, so the repository
+        resolves the related doctor and patient documents explicitly.
+        """
+
+        if not appointment:
+            return None
+
+        appointment = dict(appointment)
+
+        # Get related doctor
+        doctor = doctors_collection.find_one(
+            {
+                "doctor_id": appointment.get("doctor_id"),
+            },
+            {"_id": 0},
+        )
+
+        # Get related patient
+        patient = patients_collection.find_one(
+            {
+                "patient_id": appointment.get("patient_id"),
+            },
+            {"_id": 0},
+        )
+
+        # Keep the complete related documents
+        appointment["doctor"] = doctor
+        appointment["patient"] = patient
+
+        # Add fields expected by AppointmentResponse
+        appointment["doctor_name"] = (
+            f"{doctor['first_name']} {doctor['last_name']}"
+            if doctor
+            else None
+        )
+
+        appointment["patient_name"] = (
+            f"{patient['first_name']} {patient['last_name']}"
+            if patient
+            else None
+        )
+
+        appointment["mrn"] = (
+            patient.get("mrn")
+            if patient
+            else None
+        )
+
+        return appointment
+
+    @staticmethod
+    def add(appointment: dict):
+        appointments_collection.insert_one(
+            appointment
+        )
+
+        return appointment
+
+    @staticmethod
     def get_by_ref_for_guardian(
-        db: Session, ref: str, guardian_id: int
-    ) -> models.Appointment | None:
-        return (
-            db.query(models.Appointment)
-            .options(
-                joinedload(models.Appointment.doctor),
-                joinedload(models.Appointment.patient),
-            )
-            .filter(
-                models.Appointment.appointment_ref == ref,
-                models.Appointment.guardian_id == guardian_id,
-            )
-            .first()
+        ref: str,
+        guardian_id: int,
+    ):
+        appointment = appointments_collection.find_one(
+            {
+                "appointment_ref": ref,
+                "guardian_id": guardian_id,
+            },
+            {"_id": 0},
+        )
+
+        return AppointmentRepository._with_related_data(
+            appointment
         )
 
     @staticmethod
     def list_for_guardian(
-        db: Session, guardian_id: int, upcoming_only: bool
-    ) -> list[models.Appointment]:
-        query = (
-            db.query(models.Appointment)
-            .options(
-                joinedload(models.Appointment.doctor),
-                joinedload(models.Appointment.patient),
-            )
-            .filter(models.Appointment.guardian_id == guardian_id)
-        )
+        guardian_id: int,
+        upcoming_only: bool,
+    ):
+        query = {
+            "guardian_id": guardian_id,
+        }
 
         if upcoming_only:
-            query = query.filter(
-                models.Appointment.scheduled_at >= datetime.now(),
-                models.Appointment.status.in_(["requested", "confirmed"]),
+            query.update(
+                {
+                    "scheduled_at": {
+                        "$gte": datetime.now(),
+                    },
+                    "status": {
+                        "$in": [
+                            "requested",
+                            "confirmed",
+                        ],
+                    },
+                }
             )
 
-        return query.order_by(models.Appointment.scheduled_at).all()
+        appointments = list(
+            appointments_collection.find(
+                query,
+                {"_id": 0},
+            ).sort(
+                "scheduled_at",
+                1,
+            )
+        )
+
+        return [
+            AppointmentRepository._with_related_data(item)
+            for item in appointments
+        ]
 
     # ---------- writes ----------
 
     @staticmethod
-    def add(db: Session, appointment: models.Appointment) -> models.Appointment:
-        """Stage and flush so the database assigns appointment_id."""
-        db.add(appointment)
-        db.flush()
-        return appointment
+    def commit():
+        pass
 
     @staticmethod
-    def commit(db: Session) -> None:
-        db.commit()
+    def rollback():
+        pass
 
     @staticmethod
-    def rollback(db: Session) -> None:
-        db.rollback()
+    def refresh(
+        appointment: dict,
+    ):
+        if not appointment:
+            return appointment
 
-    @staticmethod
-    def refresh(db: Session, appointment: models.Appointment) -> models.Appointment:
-        db.refresh(appointment)
-        return appointment
+        appointment_id = appointment.get(
+            "appointment_id"
+        )
 
+        if appointment_id is None:
+            return appointment
+
+        refreshed = appointments_collection.find_one(
+            {
+                "appointment_id": appointment_id,
+            },
+            {"_id": 0},
+        )
+
+        return (
+            AppointmentRepository._with_related_data(refreshed)
+            if refreshed
+            else appointment
+        )
+
+
+# =====================================================================
+#  USER
+# =====================================================================
 class UserRepository:
 
     @staticmethod
-    def get_by_id(db: Session, user_id: int) -> models.User | None:
-        return (
-            db.query(models.User)
-            .filter(models.User.user_id == user_id)
-            .first()
+    def get_by_id(user_id: int):
+        return users_collection.find_one(
+            {"user_id": user_id},
+            {"_id": 0},
         )
 
     @staticmethod
-    def get_by_username(db: Session, username: str) -> models.User | None:
-        return (
-            db.query(models.User)
-            .filter(models.User.username == username)
-            .first()
+    def get_by_username(username: str):
+        return users_collection.find_one(
+            {"username": username},
+            {"_id": 0},
         )
 
     @staticmethod
-    def adduser(db: Session, user: models.User) -> models.User:
-        """Stage and flush so the database assigns user_id."""
-        db.add(user)
-        db.flush()
+    def list_users(
+        search: str | None = None,
+        page: int = 1,
+        page_size: int = 20,
+    ):
+        query = {}
+
+        if search:
+            search = search.strip()
+
+            query = {
+                "$or": [
+                    {
+                        "first_name": {
+                            "$regex": search,
+                            "$options": "i",
+                        }
+                    },
+                    {
+                        "last_name": {
+                            "$regex": search,
+                            "$options": "i",
+                        }
+                    },
+                    {
+                        "username": {
+                            "$regex": search,
+                            "$options": "i",
+                        }
+                    },
+                ]
+            }
+
+        total = users_collection.count_documents(
+            query
+        )
+
+        users = list(
+            users_collection.find(
+                query,
+                {"_id": 0},
+            )
+            .sort(
+                "user_id",
+                -1,
+            )
+            .skip(
+                (page - 1) * page_size
+            )
+            .limit(page_size)
+        )
+
+        return total, users
+
+    @staticmethod
+    def adduser(user: dict):
+        users_collection.insert_one(user)
         return user
 
     @staticmethod
-    def commit(db: Session) -> None:
-        db.commit()
+    def update_user(
+        user_id: int,
+        update_data: dict,
+    ):
+        users_collection.update_one(
+            {"user_id": user_id},
+            {"$set": update_data},
+        )
+
+        return UserRepository.get_by_id(
+            user_id
+        )
 
     @staticmethod
-    def rollback(db: Session) -> None:
-        db.rollback()
+    def delete_user(user_id: int):
+        return users_collection.delete_one(
+            {"user_id": user_id}
+        )
+
+    @staticmethod
+    def commit():
+        pass
+
+    @staticmethod
+    def rollback():
+        pass

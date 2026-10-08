@@ -116,6 +116,12 @@ class PatientRepository:
             "is_active": True
         }
 
+    @staticmethod
+    def build_list_query(search: str | None):
+        query = {
+            "is_active": True
+        }
+
         if search:
             search = search.strip()
 

@@ -74,6 +74,8 @@ def update_user(
 def delete_user(user_id: int):
     UserService.delete_user(user_id)
 
+    
+
     return {"message": "User deleted successfully"}
 
 

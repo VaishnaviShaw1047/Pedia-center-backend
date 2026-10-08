@@ -171,6 +171,10 @@ def get_current_user(
 # CURRENT DOCTOR
 # =====================================================================
 
+# =====================================================================
+# CURRENT DOCTOR
+# =====================================================================
+
 def get_current_doctor(
     token: str = Depends(oauth2_scheme),
 ):
@@ -220,6 +224,23 @@ def require_staff(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Staff access required",
+        )
+
+    return current_user
+
+#ADMIN-----------------------------------------------------------------------
+def require_admin(
+    current_user=Depends(get_current_user),
+):
+    role = current_user.get(
+        "role",
+        current_user.get("user_type"),
+    )
+
+    if role != "Admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
         )
 
     return current_user

@@ -20,6 +20,7 @@ Classes:
 
 import uuid
 from datetime import date, datetime, time, timedelta
+from app.config import TREATMENT_RECORD_START_ID
 
 from fastapi import HTTPException, status
 

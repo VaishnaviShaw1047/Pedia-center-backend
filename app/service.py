@@ -54,7 +54,6 @@ from app.repository import (
 # =====================================================================
 # REGISTRATION
 # =====================================================================
-
 class RegistrationService:
 
     guardians = GuardianRepository
@@ -158,13 +157,44 @@ class RegistrationService:
             cls.patients.add(patient)
             created.append(patient)
 
-        return guardian, created
+            next_patient_id = (
+                last_patient["patient_id"] + 1
+                if last_patient
+                else 1
+            )
 
+            patient = {
+                "patient_id": next_patient_id,
+                "patient_uid": str(uuid.uuid4()),
+                "mrn": cls.generate_mrn(next_patient_id),
+                "guardian_id": next_guardian_id,
+                "guardian_name": (
+                    f"{payload.first_name} {payload.last_name}"
+                ),
+                "guardian_mobile_number": payload.mobile_number,
+                "first_name": child.first_name,
+                "last_name": child.last_name,
+                "date_of_birth": datetime.combine(child.date_of_birth, datetime.min.time()),
+                "gender": child.gender,
+                "abha_id": child.abha_id,
+                "aadhaar_number": child.aadhaar_number,
+                "blood_group": child.blood_group,
+                "known_allergies": child.known_allergies,
+                "existing_conditions": child.existing_conditions,
+                "current_medications": child.current_medications,
+                "immunization_status": child.immunization_status,
+                "referred_by": child.referred_by,
+                "is_active": True,
+            }
+
+            cls.patients.add(patient)
+            created.append(patient)
+
+        return guardian, created
 
 # =====================================================================
 # PATIENT
 # =====================================================================
-
 class PatientService:
 
     repo = PatientRepository
@@ -225,9 +255,13 @@ class PatientService:
 
         return cls.get_by_mrn(mrn)
 
+        return cls.get_by_mrn(mrn)
 
 # =====================================================================
 # DOCTOR
+# =====================================================================
+# =====================================================================
+#  DOCTOR
 # =====================================================================
 
 class DoctorService:
@@ -366,6 +400,7 @@ class DoctorService:
                 detail="Doctor not found",
             )
 
+        # Check overlapping availability
         clash = cls.repo.find_overlapping_availability(
             doctor_id,
             payload.day_of_week,
@@ -485,8 +520,9 @@ class DoctorService:
         ]
 
         return doctor, weekday, free
-
-
+# =====================================================================
+#  APPOINTMENT
+# =====================================================================
 # =====================================================================
 # APPOINTMENT
 # =====================================================================
@@ -736,6 +772,14 @@ class AppointmentService:
         )
 
 
+        return cls.repo.refresh(
+            {
+                **appointment,
+                "status": "cancelled",
+            }
+        )
+# =====================================================================
+#  USER
 # =====================================================================
 # USER
 # =====================================================================

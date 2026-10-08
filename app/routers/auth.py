@@ -44,6 +44,9 @@ def login(
         access_token=token,
     )
 
+    return schemas.AuthTokenResponse(
+        access_token=token,
+    )
 
 @router.get(
     "/auth/me",

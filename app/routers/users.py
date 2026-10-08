@@ -1,9 +1,10 @@
 """User routes. HTTP only."""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends , Query
 
 from app import schemas
 from app.service import UserService
+from app.auth import require_admin
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -55,6 +56,7 @@ def get_user(user_id: int):
 def update_user(
     user_id: int,
     payload: schemas.UserUpdateRequest,
+     _admin=Depends(require_admin),
 ):
     user = UserService.update_user(
         user_id,
@@ -71,10 +73,8 @@ def update_user(
 
 
 @router.delete("/{user_id}")
-def delete_user(user_id: int):
+def delete_user(user_id: int, _admin=Depends(require_admin)):
     UserService.delete_user(user_id)
-
-    
 
     return {"message": "User deleted successfully"}
 
@@ -82,6 +82,7 @@ def delete_user(user_id: int):
 @router.post("", response_model=schemas.UserDetailResponse)
 def create_user(
     payload: schemas.UserCreateRequest,
+    _admin=Depends(require_admin),
 ):
     user = UserService.create_user(payload)
 

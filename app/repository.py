@@ -11,6 +11,7 @@ Classes:
     DoctorRepository
     AppointmentRepository
     UserRepository
+    PatientTreatmentRecordRepository
 """
 
 from datetime import datetime, time
@@ -102,6 +103,18 @@ class PatientRepository:
             },
             {"_id": 0},
         )
+
+    @staticmethod
+    def build_list_query(search: str | None):
+        query = {
+            "is_active": True
+        }
+
+    @staticmethod
+    def build_list_query(search: str | None):
+        query = {
+            "is_active": True
+        }
 
     @staticmethod
     def build_list_query(search: str | None):

@@ -11,7 +11,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query, status
 
 from app import schemas
-from app.auth import get_current_user, require_staff
+from app.auth import get_current_user, require_staff , require_admin
 from app.service import DoctorService
 
 
@@ -29,7 +29,7 @@ router = APIRouter()
 )
 def create_doctor(
     payload: schemas.DoctorCreateRequest,
-    _staff=Depends(require_staff),
+    _admin=Depends(require_admin),
 ):
     doctor = DoctorService.create(payload)
 
@@ -54,7 +54,7 @@ def create_doctor(
 def set_availability(
     doctor_id: int,
     payload: schemas.AvailabilityCreateRequest,
-    _staff=Depends(require_staff),
+    _admin=Depends(require_admin),
 ):
     return DoctorService.set_availability(
         doctor_id,

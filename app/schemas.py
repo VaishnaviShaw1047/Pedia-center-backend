@@ -138,6 +138,10 @@ class GuardianLoginRequest(BaseModel):
     mobile_number: str = Field(..., pattern=r"^[6-9]\d{9}$")
     password: str
 
+class AdminLoginRequest(BaseModel):
+    username: str
+    password: str
+
 
 class AuthTokenResponse(BaseModel):
     access_token: str
@@ -333,3 +337,59 @@ class UserUpdateRequest(BaseModel):
     first_name: Optional[str] = Field(None, max_length=50)
     last_name: Optional[str] = Field(None, max_length=50)
     user_type: Optional[str] = Field(None, max_length=15)
+#-------------------------PATIENT TREATMENT RECORDS-----------------------------
+# create treatment record
+# get treatment history by patient
+# get latest treatment record
+# ----------------------------------------------------------------------------
+class MedicationRequest(BaseModel):
+    medication_name: str = Field(..., max_length=100)
+    dosage: Optional[str] = Field(None, max_length=50)
+    frequency: Optional[str] = Field(None, max_length=50)
+    duration: Optional[str] = Field(None, max_length=50)
+    instructions: Optional[str] = Field(None, max_length=255)
+
+class TreatmentRecordCreateRequest(BaseModel):
+    patient_id: int
+    doctor_id: Optional[int] = None
+    appointment_id: Optional[int] = None
+
+    visit_date: datetime
+    diagnosis: str = Field(..., max_length=500)
+
+    medications: list[MedicationRequest] = Field(default_factory=list)
+
+    treatment_plan: Optional[str] = Field(None, max_length=1000)
+    follow_up_date: Optional[datetime] = None
+    clinical_notes: Optional[str] = Field(None, max_length=2000)
+
+class TreatmentRecordResponse(BaseModel):
+    treatment_record_id: int
+
+    patient_id: int
+    patient_name: str
+
+    doctor_id: int
+    doctor_name: str
+
+    appointment_id: Optional[int] = None
+
+    visit_date: datetime
+    diagnosis: str
+
+    medications: list[MedicationRequest] = Field(default_factory=list)
+
+    treatment_plan: Optional[str] = None
+    follow_up_date: Optional[datetime] = None
+    clinical_notes: Optional[str] = None
+
+    record_status: str
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class DoctorTreatmentSummaryResponse(BaseModel):
+    patient_id: int
+    patient_name: str
+    diagnosis: str

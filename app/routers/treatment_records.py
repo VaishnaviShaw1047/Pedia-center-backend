@@ -5,7 +5,7 @@ from app.auth import (
     require_treatment_record_creator,
     require_treatment_record_viewer,
 )
-from app.service import TreatmentRecordService
+from app.service.service import TreatmentRecordService
 
 
 router = APIRouter(

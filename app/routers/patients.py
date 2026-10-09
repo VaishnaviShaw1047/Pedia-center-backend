@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Query
 
 from app import schemas
-from app.service import PatientService
+from app.service.service import PatientService
 
 router = APIRouter()
 

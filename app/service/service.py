@@ -20,7 +20,6 @@ Classes:
 
 import uuid
 from datetime import date, datetime, time, timedelta
-from app.config import TREATMENT_RECORD_START_ID
 
 from fastapi import HTTPException, status
 
@@ -47,15 +46,18 @@ from app.repository import (
     GuardianRepository,
     PatientRepository,
     UserRepository,
-    PatientTreatmentRecordRepository,
 )
 
 
 # =====================================================================
 # REGISTRATION
 # =====================================================================
-class RegistrationService:
 
+# =====================================================================
+# REGISTRATION
+# =====================================================================
+
+class RegistrationService:
     guardians = GuardianRepository
     patients = PatientRepository
 
@@ -66,17 +68,18 @@ class RegistrationService:
     @classmethod
     def register(cls, payload):
         """
-        Creates a guardian and their children in MongoDB.
+        Create a guardian and register their children in MongoDB.
+        Returns the guardian document and the list of created patients.
         """
 
-        # 1. Check whether mobile number is already registered
+        # 1. Check whether the mobile number is already registered.
         if cls.guardians.get_by_mobile(payload.mobile_number):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="This mobile number is already registered",
             )
 
-        # 2. Generate the next guardian_id
+        # 2. Generate the next guardian ID.
         last_guardian = guardians_collection.find_one(
             {},
             sort=[("guardian_id", -1)],
@@ -88,7 +91,7 @@ class RegistrationService:
             else 1
         )
 
-        # 3. Create guardian document
+        # 3. Create the guardian document.
         guardian = {
             "guardian_id": next_guardian_id,
             "first_name": payload.first_name,
@@ -111,11 +114,10 @@ class RegistrationService:
 
         cls.guardians.add(guardian)
 
-        # 4. Create patients
+        # 4. Create each child exactly once.
         created = []
 
         for child in payload.children:
-
             last_patient = patients_collection.find_one(
                 {},
                 sort=[("patient_id", -1)],
@@ -157,44 +159,13 @@ class RegistrationService:
             cls.patients.add(patient)
             created.append(patient)
 
-            next_patient_id = (
-                last_patient["patient_id"] + 1
-                if last_patient
-                else 1
-            )
-
-            patient = {
-                "patient_id": next_patient_id,
-                "patient_uid": str(uuid.uuid4()),
-                "mrn": cls.generate_mrn(next_patient_id),
-                "guardian_id": next_guardian_id,
-                "guardian_name": (
-                    f"{payload.first_name} {payload.last_name}"
-                ),
-                "guardian_mobile_number": payload.mobile_number,
-                "first_name": child.first_name,
-                "last_name": child.last_name,
-                "date_of_birth": datetime.combine(child.date_of_birth, datetime.min.time()),
-                "gender": child.gender,
-                "abha_id": child.abha_id,
-                "aadhaar_number": child.aadhaar_number,
-                "blood_group": child.blood_group,
-                "known_allergies": child.known_allergies,
-                "existing_conditions": child.existing_conditions,
-                "current_medications": child.current_medications,
-                "immunization_status": child.immunization_status,
-                "referred_by": child.referred_by,
-                "is_active": True,
-            }
-
-            cls.patients.add(patient)
-            created.append(patient)
-
         return guardian, created
 
+
 # =====================================================================
-# PATIENT
+# PATIENT SERVICE
 # =====================================================================
+
 class PatientService:
 
     repo = PatientRepository

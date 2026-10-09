@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Query, status
 
 from app import schemas
 from app.auth import get_current_user, require_staff , require_admin
-from app.service import DoctorService
+from app.service.service import DoctorService
 
 
 router = APIRouter()

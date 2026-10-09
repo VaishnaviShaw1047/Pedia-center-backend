@@ -3,7 +3,7 @@
 from fastapi import APIRouter, status
 
 from app import schemas
-from app.service import RegistrationService
+from app.service.service import RegistrationService
 
 router = APIRouter()
 

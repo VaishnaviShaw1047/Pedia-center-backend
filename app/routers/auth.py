@@ -18,7 +18,7 @@ from app.auth import (
 # It does not contain business logic. It calls the service layer for that.
 # -------------------------------------------------------------------------------
 
-from app.service import AuthService
+from app.service.service import AuthService
 
 
 router = APIRouter()

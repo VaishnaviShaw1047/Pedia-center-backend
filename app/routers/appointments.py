@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query, status
 
 from app import schemas
 from app.auth import get_current_user
-from app.service import AppointmentService
+from app.service.service import AuthService
 
 router = APIRouter()
 

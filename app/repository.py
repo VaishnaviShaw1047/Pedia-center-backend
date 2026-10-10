@@ -184,6 +184,28 @@ class PatientRepository:
         )
 
     @staticmethod
+    def assign_doctor(
+        patient_id: int,
+        doctor_id: int,
+        doctor_name: str,
+    ):
+        patients_collection.update_one(
+            {
+                "patient_id": patient_id,
+                "is_active": True,
+                "assigned_doctor_id": {"$exists": False},
+            },
+            {
+                "$set": {
+                    "assigned_doctor_id": doctor_id,
+                    "assigned_doctor_name": doctor_name,
+                }
+            },
+        )
+
+        return PatientRepository.get_by_id(patient_id)
+
+    @staticmethod
     def delete(patient_id: int):
         return patients_collection.delete_one(
             {"patient_id": patient_id}
@@ -212,10 +234,23 @@ class DoctorRepository:
 
     @staticmethod
     def get_by_id(doctor_id: int):
+
         return doctors_collection.find_one(
             {"doctor_id": doctor_id},
             {"_id": 0},
         )
+
+    @staticmethod
+    def get_random_active_doctor():
+        doctors = list(
+            doctors_collection.aggregate([
+                {"$match": {"is_active": True}},
+                {"$sample": {"size": 1}},
+                {"$project": {"_id": 0}},
+            ])
+        )
+
+        return doctors[0] if doctors else None
 
     @staticmethod
     def get_active_by_id(doctor_id: int):

@@ -261,3 +261,73 @@ def require_admin(
         )
 
     return current_user
+# ----------------------------------------------
+
+
+def get_treatment_record_user(
+    token: str = Depends(oauth2_scheme),
+):
+    payload = _decode(token)
+    token_type = payload.get("type")
+    user_id = payload.get("sub")
+
+    if user_id is None:
+        raise credentials_error
+
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        raise credentials_error
+
+    if token_type == "doctor":
+        user = doctors_collection.find_one(
+            {"doctor_id": user_id, "is_active": True},
+            {"_id": 0},
+        )
+        if user is None:
+            raise credentials_error
+        return {**user, "role": "Doctor", "doctor_id": user_id}
+
+    if token_type == "admin":
+        user = users_collection.find_one(
+            {"user_id": user_id, "is_active": True},
+            {"_id": 0},
+        )
+        if user is None:
+            raise credentials_error
+        return {**user, "role": user.get("role", user.get("user_type", "Admin"))}
+
+    if token_type in (None, "guardian"):
+        user = guardians_collection.find_one(
+            {"guardian_id": user_id, "is_active": True},
+            {"_id": 0},
+        )
+        if user is None:
+            raise credentials_error
+        return {**user, "role": "Guardian", "guardian_id": user_id}
+
+    raise credentials_error
+
+
+def require_treatment_record_creator(
+    current_user=Depends(get_treatment_record_user),
+):
+    role = current_user.get("role", current_user.get("user_type"))
+    if role not in ("Doctor", "Admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only doctors and admins can create treatment records",
+        )
+    return current_user
+
+
+def require_treatment_record_viewer(
+    current_user=Depends(get_treatment_record_user),
+):
+    role = current_user.get("role", current_user.get("user_type"))
+    if role not in ("Admin", "Doctor", "Guardian", "Patient"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to view treatment records",
+        )
+    return current_user

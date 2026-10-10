@@ -1,8 +1,9 @@
 """Patient routes. HTTP only."""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
 from app import schemas
+from app.auth import require_admin
 from app.service.service import PatientService
 
 router = APIRouter()
@@ -62,3 +63,11 @@ def update_patient(
     payload: schemas.PatientUpdateRequest,
 ):
     return PatientService.update(mrn, payload)
+
+
+@router.post("/patients/assign-doctor")
+def assign_doctor(
+    payload: schemas.PatientDoctorAssignmentRequest,
+    current_admin=Depends(require_admin),
+):
+    return PatientService.assign_doctor(payload.patient_id)

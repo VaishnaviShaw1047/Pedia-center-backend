@@ -228,6 +228,88 @@ class PatientService:
 
         return cls.get_by_mrn(mrn)
 
+
+    @classmethod
+    def assign_doctor(cls, patient_id: int) -> dict:
+        # Find the patient
+        patient = cls.repo.get_by_id(patient_id)
+
+        if not patient or not patient.get("is_active", True):
+            raise HTTPException(
+                status_code=404,
+                detail="Active patient not found",
+            )
+
+        # Keep an existing assignment unchanged
+        if patient.get("assigned_doctor_id") is not None:
+            return {
+                "message": "Patient already has an assigned doctor",
+                "patient_id": patient["patient_id"],
+                "patient_name": (
+                    f'{patient.get("first_name", "")} '
+                    f'{patient.get("last_name", "")}'
+                ).strip(),
+                "assigned_doctor_id": patient["assigned_doctor_id"],
+                "assigned_doctor_name": patient.get(
+                    "assigned_doctor_name"
+                ),
+            }
+
+        # Select a random active doctor
+        doctor = DoctorRepository.get_random_active_doctor()
+
+        if not doctor:
+            raise HTTPException(
+                status_code=503,
+                detail="No active doctors are available",
+            )
+
+        doctor_id = doctor.get("doctor_id")
+        doctor_name = (
+            f'{doctor.get("first_name", "")} '
+            f'{doctor.get("last_name", "")}'
+        ).strip()
+
+        if doctor_id is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Selected doctor has no doctor_id",
+            )
+
+        # Save the assignment
+        updated_patient = cls.repo.assign_doctor(
+            patient_id=patient_id,
+            doctor_id=doctor_id,
+            doctor_name=doctor_name,
+        )
+
+        if not updated_patient:
+            raise HTTPException(
+                status_code=500,
+                detail="Could not save doctor assignment",
+            )
+
+        # Use the stored assignment in case another request assigned first
+        assigned_doctor_id = updated_patient.get("assigned_doctor_id")
+        assigned_doctor_name = updated_patient.get(
+            "assigned_doctor_name"
+        )
+
+        return {
+            "message": (
+                "Doctor assigned successfully"
+                if assigned_doctor_id == doctor_id
+                else "Patient already has an assigned doctor"
+            ),
+            "patient_id": updated_patient["patient_id"],
+            "patient_name": (
+                f'{updated_patient.get("first_name", "")} '
+                f'{updated_patient.get("last_name", "")}'
+            ).strip(),
+            "assigned_doctor_id": assigned_doctor_id,
+            "assigned_doctor_name": assigned_doctor_name,
+        }
+
         return cls.get_by_mrn(mrn)
 
 # =====================================================================

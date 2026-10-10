@@ -7,6 +7,7 @@ from app.routers import (
     appointments,
     registration,
     patients,
+    treatment_records,
     users,
 )
 
@@ -23,6 +24,7 @@ app.include_router(doctors.router, prefix="/api/v1", tags=["doctors"])
 app.include_router(appointments.router, prefix="/api/v1", tags=["appointments"])
 app.include_router(registration.router, prefix="/api/v1", tags=["registration"])
 app.include_router(patients.router, prefix="/api/v1", tags=["patients"])
+app.include_router(treatment_records.router, prefix="/api/v1", tags=["treatment-records"])
 app.include_router(users.router, prefix="/api/v1", tags=["users"])
 
 

@@ -22,6 +22,7 @@ from app.mongodb import (
     patients_collection,
     doctors_collection,
     appointments_collection,
+    treatment_records_collection,
 )
 
 
@@ -89,6 +90,14 @@ class PatientRepository:
             {"mrn": mrn},
             {"_id": 0},
         )
+    
+    @staticmethod
+    def get_by_id(patient_id: int):
+        return patients_collection.find_one(
+            {"patient_id": patient_id},
+            {"_id": 0},
+        )
+
 
     @staticmethod
     def get_for_guardian(
@@ -921,3 +930,77 @@ class UserRepository:
     @staticmethod
     def rollback():
         pass
+
+
+######################TREATMENT RECORD REPOSITORY########################
+
+class PatientTreatmentRecordRepository:
+    @staticmethod
+    def add(record: dict):
+        treatment_records_collection.insert_one(record)
+        return treatment_records_collection.find_one(
+            {"treatment_record_id": record["treatment_record_id"]},
+            {"_id": 0},
+        )
+
+    @staticmethod
+    def get_by_id(treatment_record_id: int):
+        return treatment_records_collection.find_one(
+            {"treatment_record_id": treatment_record_id},
+            {"_id": 0},
+        )
+
+    @staticmethod
+    def list_for_patient(patient_id: int):
+        return list(
+            treatment_records_collection.find(
+                {"patient_id": patient_id},
+                {"_id": 0},
+            ).sort("visit_date", -1)
+        )
+
+    @staticmethod
+    def update(treatment_record_id: int, update_data: dict):
+        treatment_records_collection.update_one(
+            {"treatment_record_id": treatment_record_id},
+            {"$set": update_data},
+        )
+        return PatientTreatmentRecordRepository.get_by_id(
+            treatment_record_id
+        )
+
+    @staticmethod
+    def delete(treatment_record_id: int):
+        return treatment_records_collection.delete_one(
+            {"treatment_record_id": treatment_record_id}
+        )
+
+    @staticmethod
+    def get_latest_for_patient(patient_id: int):
+        return treatment_records_collection.find_one(
+            {"patient_id": patient_id},
+            {"_id": 0},
+            sort=[("visit_date", -1)],
+        )
+
+    @staticmethod
+    def list_for_doctor(doctor_id: int):
+        return list(
+            treatment_records_collection.find(
+                {"doctor_id": doctor_id},
+                {
+                    "_id": 0,
+                    "patient_id": 1,
+                    "patient_name": 1,
+                    "diagnosis": 1,
+                },
+            ).sort("visit_date", -1)
+        )
+
+    @staticmethod
+    def get_latest_record():
+        return treatment_records_collection.find_one(
+            {},
+            {"_id": 0},
+            sort=[("treatment_record_id", -1)],
+        )

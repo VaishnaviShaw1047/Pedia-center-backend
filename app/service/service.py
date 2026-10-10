@@ -29,6 +29,7 @@ from app.mongodb import (
     patients_collection,
     doctors_collection,
     appointments_collection,
+    treatment_records_collection,   
 )
 
 from app import schemas
@@ -46,6 +47,7 @@ from app.repository import (
     GuardianRepository,
     PatientRepository,
     UserRepository,
+    PatientTreatmentRecordRepository
 )
 
 
@@ -1202,3 +1204,135 @@ class AuthService:
                 )
             },
         )
+
+
+###########TREATMENT RECORD SERVICE ##########################
+
+class TreatmentRecordService:
+    @staticmethod
+    def create(payload, current_user: dict):
+        from datetime import datetime
+        from fastapi import HTTPException
+        from app.repository import PatientRepository, DoctorRepository
+
+        patient = PatientRepository.get_by_id(payload.patient_id)
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+
+        role = current_user.get("role", current_user.get("user_type"))
+
+        if role == "Doctor":
+            doctor_id = current_user.get("doctor_id")
+            if doctor_id is None:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Doctor account is not linked to a doctor profile",
+                )
+        elif role == "Admin":
+            doctor_id = payload.doctor_id
+            if doctor_id is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Admin must provide doctor_id",
+                )
+        else:
+            raise HTTPException(
+                status_code=403,
+                detail="Only doctors and admins can create treatment records",
+            )
+
+        doctor = DoctorRepository.get_by_id(doctor_id)
+        if not doctor:
+            raise HTTPException(status_code=404, detail="Doctor not found")
+
+        latest = PatientTreatmentRecordRepository.get_latest_record()
+        treatment_record_id = (
+            latest["treatment_record_id"] + 1 if latest else 100001
+        )
+
+        now = datetime.utcnow()
+        record = {
+            "treatment_record_id": treatment_record_id,
+            "patient_id": patient["patient_id"],
+            "patient_name": (
+                f'{patient["first_name"]} {patient["last_name"]}'
+            ),
+            "doctor_id": doctor["doctor_id"],
+            "doctor_name": f'{doctor["first_name"]} {doctor["last_name"]}',
+            "appointment_id": payload.appointment_id,
+            "visit_date": payload.visit_date,
+            "diagnosis": payload.diagnosis,
+            "medications": [
+                medication.model_dump() for medication in payload.medications
+            ],
+            "treatment_plan": payload.treatment_plan,
+            "follow_up_date": payload.follow_up_date,
+            "clinical_notes": payload.clinical_notes,
+            "record_status": "active",
+            "created_at": now,
+            "updated_at": now,
+        }
+
+        return PatientTreatmentRecordRepository.add(record)
+
+    @staticmethod
+    def get_patient_history(patient_id: int, current_user: dict):
+        from fastapi import HTTPException
+        from app.repository import PatientRepository
+
+        patient = PatientRepository.get_by_id(patient_id)
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+
+        role = current_user.get("role", current_user.get("user_type"))
+
+        if role in ("Admin", "Doctor"):
+            pass
+        elif role == "Guardian":
+            guardian_id = current_user.get("guardian_id")
+            linked_patient = PatientRepository.get_for_guardian(
+                patient_id, guardian_id
+            )
+            if not linked_patient:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You are not authorized to view this patient's records",
+                )
+        elif role == "Patient":
+            if current_user.get("patient_id") != patient_id:
+                raise HTTPException(
+                    status_code=403,
+                    detail="You are not authorized to view this patient's records",
+                )
+        else:
+            raise HTTPException(
+                status_code=403,
+                detail="You are not authorized to view treatment records",
+            )
+
+        return PatientTreatmentRecordRepository.list_for_patient(patient_id)
+
+    @staticmethod
+    def get_latest_patient_record(patient_id: int, current_user: dict):
+        records = TreatmentRecordService.get_patient_history(
+            patient_id, current_user
+        )
+        return records[0] if records else None
+
+    @staticmethod
+    def get_doctor_records(doctor_id: int, current_user: dict):
+        from fastapi import HTTPException
+
+        role = current_user.get("role", current_user.get("user_type"))
+        if role == "Doctor" and current_user.get("doctor_id") != doctor_id:
+            raise HTTPException(
+                status_code=403,
+                detail="Doctors can only view their own treatment records",
+            )
+        if role not in ("Admin", "Doctor"):
+            raise HTTPException(
+                status_code=403,
+                detail="Only doctors and admins can view doctor records",
+            )
+
+        return PatientTreatmentRecordRepository.list_for_doctor(doctor_id)

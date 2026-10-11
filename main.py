@@ -10,6 +10,7 @@ from app.routers import (
     patients,
     treatment_records,
     users,
+    doctor_assign,
 )
 
 app = FastAPI(title="Pedia Centre API")
@@ -26,7 +27,7 @@ app.include_router(
     tags=["treatment-records"],
 )
 app.include_router(users.router, prefix="/api/v1", tags=["users"])
-
+app.include_router(doctor_assign.router, prefix="/api/v1", tags=["doctor-assignments"])
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,

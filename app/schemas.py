@@ -396,3 +396,13 @@ class DoctorTreatmentSummaryResponse(BaseModel):
 
 class PatientDoctorAssignmentRequest(BaseModel):
     patient_id: int = Field(..., gt=0)
+    doctor_id: int = Field(..., gt=0)
+
+class PatientDoctorAssignmentResponse(BaseModel):
+    message: str
+    patient_id: int
+    patient_name: str
+    doctor_id: int
+    doctor_name: str
+    assignment_date: datetime
+    

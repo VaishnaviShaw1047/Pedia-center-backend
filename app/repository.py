@@ -23,6 +23,7 @@ from app.mongodb import (
     doctors_collection,
     appointments_collection,
     treatment_records_collection,
+    doctor_assignments_collection,
 )
 
 
@@ -183,27 +184,7 @@ class PatientRepository:
             {"_id": 0},
         )
 
-    @staticmethod
-    def assign_doctor(
-        patient_id: int,
-        doctor_id: int,
-        doctor_name: str,
-    ):
-        patients_collection.update_one(
-            {
-                "patient_id": patient_id,
-                "is_active": True,
-                "assigned_doctor_id": {"$exists": False},
-            },
-            {
-                "$set": {
-                    "assigned_doctor_id": doctor_id,
-                    "assigned_doctor_name": doctor_name,
-                }
-            },
-        )
-
-        return PatientRepository.get_by_id(patient_id)
+   
 
     @staticmethod
     def delete(patient_id: int):
@@ -1039,3 +1020,15 @@ class PatientTreatmentRecordRepository:
             {"_id": 0},
             sort=[("treatment_record_id", -1)],
         )
+# =====================================================================
+# DOCTOR ASSIGNMENT REPOSITORY
+# =====================================================================
+
+class DoctorAssignmentRepository:
+
+    @staticmethod
+    def add(assignment: dict):
+        doctor_assignments_collection.insert_one(assignment)
+        return assignment
+
+

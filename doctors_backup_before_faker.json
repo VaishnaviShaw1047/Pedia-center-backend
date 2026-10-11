@@ -1,0 +1,999 @@
+[
+  {
+    "_id": {
+      "$oid": "6ac3ab01f23dce56617ced57"
+    },
+    "doctor_id": 1,
+    "staff_id": "DOC-2026-0001",
+    "first_name": "Test",
+    "last_name": "Doctor",
+    "registration_no": "REG-1791208193451",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Mon,Wed,Fri",
+    "mobile_number": "9208193451",
+    "email": "doctor1791208193451@example.com",
+    "password_hash": "$2b$12$4fLH9ktXpYtgb1wFp9A2aOMQOJPTUWebOtSDWB7tVDPvy24UqzYK6",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3acadedfac997a05ed1c1"
+    },
+    "doctor_id": 2,
+    "staff_id": "DOC-2026-0002",
+    "first_name": "Test",
+    "last_name": "Doctor",
+    "registration_no": "REG-1791208620939",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Mon,Wed,Fri",
+    "mobile_number": "9208620939",
+    "email": "doctor1791208620939@example.com",
+    "password_hash": "$2b$12$UPneFE0vcju/cieCrFLCreyUj6P.iMrNXwiblb6qstayeBQn6bZOe",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 2
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3ad407f08b19f14b0d47f"
+    },
+    "doctor_id": 3,
+    "staff_id": "DOC-2026-0003",
+    "first_name": "Test",
+    "last_name": "AppointmentDoctor",
+    "registration_no": "REG-APT-1791208767950",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Sun",
+    "mobile_number": "9208767950",
+    "email": "appointmentdoctor1791208767950@example.com",
+    "password_hash": "$2b$12$ynuZ9f63TkHlmxi2WuBdDeiHE.Dx38vX2Y7PEDWMGtOvKU0hMOhKe",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 3
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3adad1a8365c743abb511"
+    },
+    "doctor_id": 4,
+    "staff_id": "DOC-2026-0004",
+    "first_name": "Test",
+    "last_name": "AppointmentDoctor",
+    "registration_no": "REG-APT-1791208877204",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Sun",
+    "mobile_number": "9208877204",
+    "email": "appointmentdoctor1791208877204@example.com",
+    "password_hash": "$2b$12$5eQwMKfUiPVv.8.e.XQGOeFp4UfhG8y/nsAQySn14rurG6DoIz9/a",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 4
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3c60cee72341e3e24cc82"
+    },
+    "doctor_id": 5,
+    "staff_id": "DOC-2026-0005",
+    "first_name": "Test",
+    "last_name": "AppointmentDoctor",
+    "registration_no": "REG-APT-1791215116209",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Sun",
+    "mobile_number": "9215116209",
+    "email": "appointmentdoctor1791215116209@example.com",
+    "password_hash": "$2b$12$2mWj/xIqTNTrXCFE5Cqx6.HTv997QaIFiDJQTkU8Vr6/i0vp4pO8C",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 5
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3c60fee72341e3e24cc87"
+    },
+    "doctor_id": 6,
+    "staff_id": "DOC-2026-0006",
+    "first_name": "Test",
+    "last_name": "Doctor",
+    "registration_no": "REG-1791215119512",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Mon,Wed,Fri",
+    "mobile_number": "9215119512",
+    "email": "doctor1791215119512@example.com",
+    "password_hash": "$2b$12$1.Vdf7nlgBak8tdsTsmcCO2vuJe7NNtRak6tOEtLj/RuPzF3rrt4e",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 6
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3c6f47430bb79a703ef43"
+    },
+    "doctor_id": 7,
+    "staff_id": "DOC-2026-0007",
+    "first_name": "Test",
+    "last_name": "AppointmentDoctor",
+    "registration_no": "REG-APT-1791215347950",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Sun",
+    "mobile_number": "9215347950",
+    "email": "appointmentdoctor1791215347950@example.com",
+    "password_hash": "$2b$12$PKIkub8Jeu/w6P..R33N4.s0luNCAP4ECchOPY7tvXHqmf6XO9TZW",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 7
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3c793ca0f4c5f968b2aec"
+    },
+    "doctor_id": 8,
+    "staff_id": "DOC-2026-0008",
+    "first_name": "Test",
+    "last_name": "AppointmentDoctor",
+    "registration_no": "REG-APT-1791215507258",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Sun",
+    "mobile_number": "9215507258",
+    "email": "appointmentdoctor1791215507258@example.com",
+    "password_hash": "$2b$12$jHnT28Wrgwd83yCjal05hOO/8zpDHzzKR714XhOE.rA42.cq6gIFK",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 8
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3c7f2e631a3e1feea9f4d"
+    },
+    "doctor_id": 9,
+    "staff_id": "DOC-2026-0009",
+    "first_name": "Test",
+    "last_name": "AppointmentDoctor",
+    "registration_no": "REG-APT-1791215601537",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Sun",
+    "mobile_number": "9215601537",
+    "email": "appointmentdoctor1791215601537@example.com",
+    "password_hash": "$2b$12$wH2xRSfnOkJHL2jkOO2gYeKtJCUSZhS1p1Yjutxc7grBo1DuntpG6",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 9
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3c8aa96edf71a4241fac3"
+    },
+    "doctor_id": 10,
+    "staff_id": "DOC-2026-0010",
+    "first_name": "Test",
+    "last_name": "AppointmentDoctor",
+    "registration_no": "REG-APT-1791215785696",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Sun",
+    "mobile_number": "9215785696",
+    "email": "appointmentdoctor1791215785696@example.com",
+    "password_hash": "$2b$12$FHYvZ0GfY/b5TyyRX86R9.xy0.kiCeqDAnkJp3VM6kND0i8JQxmPa",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 10
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3c8b3d218b6704e652bcc"
+    },
+    "doctor_id": 11,
+    "staff_id": "DOC-2026-0011",
+    "first_name": "Test",
+    "last_name": "AppointmentDoctor",
+    "registration_no": "REG-APT-1791215794773",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Sun",
+    "mobile_number": "9215794773",
+    "email": "appointmentdoctor1791215794773@example.com",
+    "password_hash": "$2b$12$QCQwazMuILYU2mYe2IUso.tYZqs0Piqmkviuwnlz/t4OXclG./yxq",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 11
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3c8b5d218b6704e652bd1"
+    },
+    "doctor_id": 12,
+    "staff_id": "DOC-2026-0012",
+    "first_name": "Test",
+    "last_name": "Doctor",
+    "registration_no": "REG-1791215796829",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Mon,Wed,Fri",
+    "mobile_number": "9215796829",
+    "email": "doctor1791215796829@example.com",
+    "password_hash": "$2b$12$XZZ2bmXCMBz4FvZPgCUZNukh12V1qp33HasvOtwD/N7UGfp2Z87yO",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 12
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3c94620e2f8b8a1412bdb"
+    },
+    "doctor_id": 13,
+    "staff_id": "DOC-2026-0013",
+    "first_name": "Test",
+    "last_name": "AppointmentDoctor",
+    "registration_no": "REG-APT-1791215942496",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Sun",
+    "mobile_number": "9215942496",
+    "email": "appointmentdoctor1791215942496@example.com",
+    "password_hash": "$2b$12$da0XXSGx4mTE.rmw./5SXO5h.fOZAud..5BrQvdl4TP3jEiYO1syC",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 13
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3c94920e2f8b8a1412be0"
+    },
+    "doctor_id": 14,
+    "staff_id": "DOC-2026-0014",
+    "first_name": "Test",
+    "last_name": "Doctor",
+    "registration_no": "REG-1791215944567",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Mon,Wed,Fri",
+    "mobile_number": "9215944567",
+    "email": "doctor1791215944567@example.com",
+    "password_hash": "$2b$12$IrKWRsZ4dwA2v6cQpGh/fuEwiovHWaAXH5i.O1lCwy9OHg390BsnG",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 14
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3c9831e5fa1ab00dce394"
+    },
+    "doctor_id": 15,
+    "staff_id": "DOC-2026-0015",
+    "first_name": "Test",
+    "last_name": "AppointmentDoctor",
+    "registration_no": "REG-APT-1791216002599",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Sun",
+    "mobile_number": "9216002599",
+    "email": "appointmentdoctor1791216002599@example.com",
+    "password_hash": "$2b$12$QazrF6MuOIs.maYzF8NZlumSq/AwwlFAE2cFh3iM/RI5DRvkYc1nO",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 15
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3c9851e5fa1ab00dce399"
+    },
+    "doctor_id": 16,
+    "staff_id": "DOC-2026-0016",
+    "first_name": "Test",
+    "last_name": "Doctor",
+    "registration_no": "REG-1791216004632",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Mon,Wed,Fri",
+    "mobile_number": "9216004632",
+    "email": "doctor1791216004632@example.com",
+    "password_hash": "$2b$12$rARLoSDd3ylnugEsMVtzMOUK/avpUbAW2t8zyUP2//sic5wd0dn2q",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 16
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3ca832e1031732573d153"
+    },
+    "doctor_id": 17,
+    "staff_id": "DOC-2026-0017",
+    "first_name": "Test",
+    "last_name": "AppointmentDoctor",
+    "registration_no": "REG-APT-1791216258838",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Sun",
+    "mobile_number": "9216258838",
+    "email": "appointmentdoctor1791216258838@example.com",
+    "password_hash": "$2b$12$fPSXS8QmOEgc9qSn4VeaP.yuzgDGgjyeBpgAo7uf8j0ze6gx0kxKi",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 17
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac3ca852e1031732573d158"
+    },
+    "doctor_id": 18,
+    "staff_id": "DOC-2026-0018",
+    "first_name": "Test",
+    "last_name": "Doctor",
+    "registration_no": "REG-1791216260882",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Mon,Wed,Fri",
+    "mobile_number": "9216260882",
+    "email": "doctor1791216260882@example.com",
+    "password_hash": "$2b$12$huuZSo//qiUO7Kn6sDfV4OKZUW9LlIiFiHOHqCbF5C4hMwq701pZO",
+    "is_active": true,
+    "availability": [
+      {
+        "day_of_week": 1,
+        "start_time": "09:00:00",
+        "end_time": "12:00:00",
+        "slot_minutes": 30,
+        "is_active": true,
+        "availability_id": 1,
+        "doctor_id": 18
+      }
+    ]
+  },
+  {
+    "_id": {
+      "$oid": "6ac4e7b5e079b8fcb5086056"
+    },
+    "doctor_id": 19,
+    "staff_id": "DOC-2026-0019",
+    "first_name": "Postman",
+    "last_name": "Doctor",
+    "registration_no": "REG-POSTMAN-001",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Mon,Tue,Wed",
+    "mobile_number": "9876543210",
+    "email": "postman.doctor@example.com",
+    "password_hash": "$2b$12$PG6AB75NGJ5EilO6RnlE/.FFmmlnkmP/KflVpvcElMoVjsLnk84wO",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a1f395f7fcc96361e8"
+    },
+    "doctor_id": 20,
+    "staff_id": "DOC-2026-0020",
+    "first_name": "Aarav",
+    "last_name": "Mehta",
+    "registration_no": "TEST-1791555233-1",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555234",
+    "email": "aarav.mehta1791555233@gmail.com",
+    "password_hash": "$2b$12$lgdQMVvUbguryVAZ28./Oe2Ef4.XE/gE3yzSnkFALZN5Gx3VPMgeq",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a1f395f7fcc96361e9"
+    },
+    "doctor_id": 21,
+    "staff_id": "DOC-2026-0021",
+    "first_name": "Rohan",
+    "last_name": "Kapoor",
+    "registration_no": "TEST-1791555233-2",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555235",
+    "email": "rohan.kapoor1791555233@gmail.com",
+    "password_hash": "$2b$12$PKuGcCSVdhrgBxH3MfBoqOgtQ4t3zLWabO9RUYW7LD/O0dCOw4PS.",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a2f395f7fcc96361ea"
+    },
+    "doctor_id": 22,
+    "staff_id": "DOC-2026-0022",
+    "first_name": "Arjun",
+    "last_name": "Malhotra",
+    "registration_no": "TEST-1791555233-3",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555236",
+    "email": "arjun.malhotra1791555233@gmail.com",
+    "password_hash": "$2b$12$2LBdmaYFPWxunvgysDK1w.mRr7IAXr1dDKddBg30ubPSRNY1Mpp5S",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a2f395f7fcc96361eb"
+    },
+    "doctor_id": 23,
+    "staff_id": "DOC-2026-0023",
+    "first_name": "Vikram",
+    "last_name": "Sharma",
+    "registration_no": "TEST-1791555233-4",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555237",
+    "email": "vikram.sharma1791555233@gmail.com",
+    "password_hash": "$2b$12$GJ7SMfk0trDCTcV4bGBsx.k6R4/zCjB6EDHn3GisZelkTOrnLNY5q",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a2f395f7fcc96361ec"
+    },
+    "doctor_id": 24,
+    "staff_id": "DOC-2026-0024",
+    "first_name": "Rahul",
+    "last_name": "Verma",
+    "registration_no": "TEST-1791555233-5",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555238",
+    "email": "rahul.verma1791555233@gmail.com",
+    "password_hash": "$2b$12$IRqbSx8JoSBRc8VKUv8n4uasT85wLtySHO1ZuiJ3ZeF5vz.eeOJ0q",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a2f395f7fcc96361ed"
+    },
+    "doctor_id": 25,
+    "staff_id": "DOC-2026-0025",
+    "first_name": "Aditya",
+    "last_name": "Chatterjee",
+    "registration_no": "TEST-1791555233-6",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555239",
+    "email": "aditya.chatterjee1791555233@gmail.com",
+    "password_hash": "$2b$12$GPAuN3f5K1.xAJh721ikvO03p3mkhA5e18A1IfB5/Vxhqf8CbxGaa",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a3f395f7fcc96361ee"
+    },
+    "doctor_id": 26,
+    "staff_id": "DOC-2026-0026",
+    "first_name": "Karan",
+    "last_name": "Bose",
+    "registration_no": "TEST-1791555233-7",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555240",
+    "email": "karan.bose1791555233@gmail.com",
+    "password_hash": "$2b$12$FxYLNTpsEOPxNBGiU2XaOuAuXfY068iKeZRrD06wd6TnETahE8pbu",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a3f395f7fcc96361ef"
+    },
+    "doctor_id": 27,
+    "staff_id": "DOC-2026-0027",
+    "first_name": "Ankit",
+    "last_name": "Agarwal",
+    "registration_no": "TEST-1791555233-8",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555241",
+    "email": "ankit.agarwal1791555233@gmail.com",
+    "password_hash": "$2b$12$kDnllI6Vx0CG/WLPF/.Ft.0JQ3mCDh.SVc7.0AuDwNX4kbX6uqobG",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a3f395f7fcc96361f0"
+    },
+    "doctor_id": 28,
+    "staff_id": "DOC-2026-0028",
+    "first_name": "Siddharth",
+    "last_name": "Roy",
+    "registration_no": "TEST-1791555233-9",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555242",
+    "email": "siddharth.roy1791555233@gmail.com",
+    "password_hash": "$2b$12$9xzNlJekj4Lqf9.6O98AE.e3kO0z211p5KxgXI8a640I2UOY4eUwG",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a3f395f7fcc96361f1"
+    },
+    "doctor_id": 29,
+    "staff_id": "DOC-2026-0029",
+    "first_name": "Nikhil",
+    "last_name": "Gupta",
+    "registration_no": "TEST-1791555233-10",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555243",
+    "email": "nikhil.gupta1791555233@gmail.com",
+    "password_hash": "$2b$12$JmvPnmo0eQ2QEGHVgfAr.uv4KaPpGWD.GXrz5GRPOmRoJ5pEJdz9O",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a3f395f7fcc96361f2"
+    },
+    "doctor_id": 30,
+    "staff_id": "DOC-2026-0030",
+    "first_name": "Rajiv",
+    "last_name": "Banerjee",
+    "registration_no": "TEST-1791555233-11",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555244",
+    "email": "rajiv.banerjee1791555233@gmail.com",
+    "password_hash": "$2b$12$EwrhREA4ZKxU/yTN8NWDsOuwQ32uFqq9LCljIx/6.T3OV93/hUTgy",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a4f395f7fcc96361f3"
+    },
+    "doctor_id": 31,
+    "staff_id": "DOC-2026-0031",
+    "first_name": "Abhishek",
+    "last_name": "Das",
+    "registration_no": "TEST-1791555233-12",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555245",
+    "email": "abhishek.das1791555233@gmail.com",
+    "password_hash": "$2b$12$7I2dvQaQQm0gOxOS5ebf8uxwUIFofnXRogPeq6FVnS8jj3x6p.Ybm",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a4f395f7fcc96361f4"
+    },
+    "doctor_id": 32,
+    "staff_id": "DOC-2026-0032",
+    "first_name": "Saurabh",
+    "last_name": "Mukherjee",
+    "registration_no": "TEST-1791555233-13",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555246",
+    "email": "saurabh.mukherjee1791555233@gmail.com",
+    "password_hash": "$2b$12$yCEYG/wi0rcgC9eBR805a.VDPxOMSSH8aqA3/ICcGwstxZKbPKuky",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a4f395f7fcc96361f5"
+    },
+    "doctor_id": 33,
+    "staff_id": "DOC-2026-0033",
+    "first_name": "Amit",
+    "last_name": "Sen",
+    "registration_no": "TEST-1791555233-14",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555247",
+    "email": "amit.sen1791555233@gmail.com",
+    "password_hash": "$2b$12$3NPWoxDbr6Kbx/h4u6i4GOZxpt8tLef/w1ZEtlR1VK0ajq14RVvYu",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a4f395f7fcc96361f6"
+    },
+    "doctor_id": 34,
+    "staff_id": "DOC-2026-0034",
+    "first_name": "Varun",
+    "last_name": "Sinha",
+    "registration_no": "TEST-1791555233-15",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555248",
+    "email": "varun.sinha1791555233@gmail.com",
+    "password_hash": "$2b$12$gwwsd5JbZRQHoocIBAd4eunm47kXTi9cA6JBqsAsjfwUdzphLmmb6",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a4f395f7fcc96361f7"
+    },
+    "doctor_id": 35,
+    "staff_id": "DOC-2026-0035",
+    "first_name": "Manish",
+    "last_name": "Jain",
+    "registration_no": "TEST-1791555233-16",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555249",
+    "email": "manish.jain1791555233@gmail.com",
+    "password_hash": "$2b$12$QK5GpUKoPPcKJlo7SklVP.q8k7cjeY2kYB8v.7a9QQx4YknAIDh2e",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a5f395f7fcc96361f8"
+    },
+    "doctor_id": 36,
+    "staff_id": "DOC-2026-0036",
+    "first_name": "Akash",
+    "last_name": "Patel",
+    "registration_no": "TEST-1791555233-17",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555250",
+    "email": "akash.patel1791555233@gmail.com",
+    "password_hash": "$2b$12$yCJ.Md.u7RY2iqNoXDJiD.Z7c5rTQb/TZFEkT5SyAHkt.FBdrReOW",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a5f395f7fcc96361f9"
+    },
+    "doctor_id": 37,
+    "staff_id": "DOC-2026-0037",
+    "first_name": "Pranav",
+    "last_name": "Iyer",
+    "registration_no": "TEST-1791555233-18",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555251",
+    "email": "pranav.iyer1791555233@gmail.com",
+    "password_hash": "$2b$12$iwOArXOreYSQjQ/XVXpWtuu0SyUHpevzLgt/bLLpaeV15ixf5lXFC",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a5f395f7fcc96361fa"
+    },
+    "doctor_id": 38,
+    "staff_id": "DOC-2026-0038",
+    "first_name": "Rajat",
+    "last_name": "Deshmukh",
+    "registration_no": "TEST-1791555233-19",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555252",
+    "email": "rajat.deshmukh1791555233@gmail.com",
+    "password_hash": "$2b$12$4gB.FljsHdYXx1cm.Ig69ujCW0ov5tE8PkNMaewYw0j8CzN3cc0Au",
+    "is_active": true,
+    "availability": []
+  },
+  {
+    "_id": {
+      "$oid": "6ac8f6a5f395f7fcc96361fb"
+    },
+    "doctor_id": 39,
+    "staff_id": "DOC-2026-0039",
+    "first_name": "Dev",
+    "last_name": "Choudhary",
+    "registration_no": "TEST-1791555233-20",
+    "qualification": "MBBS",
+    "specialty": "Pediatrics",
+    "experience_years": 5,
+    "languages": "English, Hindi",
+    "consultation_fee": 500,
+    "available_days": "Monday,Tuesday,Wednesday,Thursday,Friday",
+    "mobile_number": "9791555253",
+    "email": "dev.choudhary1791555233@gmail.com",
+    "password_hash": "$2b$12$SActxfqmtq/Ae5OKaHH8i.VvmRS3FmmYoFRLvxHefSDnWOwn71VZe",
+    "is_active": true,
+    "availability": []
+  }
+]

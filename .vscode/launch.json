@@ -1,24 +1,37 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    
-    "configurations": [
-        {
-            "name": "Python Debugger: FastAPI",
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+
+  "configurations": [
+   
+
+    {
+            "name": "Debug Pedia Centre API",
             "type": "debugpy",
             "request": "launch",
-            "python": "${workspaceFolder}/venv/Scripts/python.exe",
+            "python": "C:\\Users\\asus\\anaconda3\\python.exe",
             "module": "uvicorn",
             "args": [
                 "main:app",
-                "--reload" ,
-                 "--port", "8000"
+                "--port",
+                "8000"
             ],
             "cwd": "${workspaceFolder}",
-            "envFile": "${workspaceFolder}/.env" ,
-            "jinja": true
-        }
-    ]
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+    {
+      "name": "Python Debugger: FastAPI",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${workspaceFolder}/venv/Scripts/python.exe",
+      "module": "uvicorn",
+      "args": ["main:app", "--reload", "--port", "8000"],
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "jinja": true
+    }
+  ]
 }

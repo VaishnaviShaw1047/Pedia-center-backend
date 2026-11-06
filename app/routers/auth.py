@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app import schemas
+from app.schemas import schemas
 
 from app.auth import (
     get_current_doctor,
@@ -38,10 +38,6 @@ def login(
     token = AuthService.login_guardian(
         payload.mobile_number,
         payload.password,
-    )
-
-    return schemas.AuthTokenResponse(
-        access_token=token,
     )
 
     return schemas.AuthTokenResponse(

@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends , Query
 
-from app import schemas
+from app.schemas import schemas
 from app.service.service import UserService
 
 from app.auth import require_admin

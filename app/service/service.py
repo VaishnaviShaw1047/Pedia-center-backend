@@ -23,7 +23,7 @@ from datetime import date, datetime, time, timedelta
 
 from fastapi import HTTPException, status
 
-from app.mongodb import (
+from app.repository.mongodb import (
     users_collection,
     guardians_collection,
     patients_collection,
@@ -32,7 +32,7 @@ from app.mongodb import (
     treatment_records_collection,   
 )
 
-from app import schemas
+from app.schemas import schemas
 
 from app.auth import (
     create_access_token,
@@ -41,7 +41,7 @@ from app.auth import (
     verify_token,
 )
 
-from app.repository import (
+from app.repository.repository import (
     AppointmentRepository,
     DoctorRepository,
     GuardianRepository,
@@ -1295,7 +1295,7 @@ class TreatmentRecordService:
     def create(payload, current_user: dict):
         from datetime import datetime
         from fastapi import HTTPException
-        from app.repository import PatientRepository, DoctorRepository
+        from app.repository.repository import PatientRepository, DoctorRepository
 
         patient = PatientRepository.get_by_id(payload.patient_id)
         if not patient:
@@ -1360,7 +1360,7 @@ class TreatmentRecordService:
     @staticmethod
     def get_patient_history(patient_id: int, current_user: dict):
         from fastapi import HTTPException
-        from app.repository import PatientRepository
+        from app.repository.repository import PatientRepository
 
         patient = PatientRepository.get_by_id(patient_id)
         if not patient:

@@ -16,7 +16,7 @@ Classes:
 
 from datetime import datetime, time
 
-from app.mongodb import (
+from app.repository.mongodb import (
     users_collection,
     guardians_collection,
     patients_collection,

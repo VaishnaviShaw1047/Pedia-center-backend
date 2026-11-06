@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from fastapi import HTTPException
 
-from app.repository import (
+from app.repository.repository import (
     DoctorAssignmentRepository,
     DoctorRepository,
     PatientRepository,

@@ -10,7 +10,7 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app import schemas
+from app.schemas import schemas
 from app.auth import get_current_user, require_staff , require_admin
 from app.service.service import DoctorService
 

@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta
 import random
 
-from app.mongodb import (
+from app.repository.mongodb import (
     patients_collection,
     doctors_collection,
     appointments_collection,

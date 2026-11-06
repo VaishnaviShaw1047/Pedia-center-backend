@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.auth import require_treatment_record_creator
-from app.schemas import (
+from app.schemas.schemas import (
     PatientDoctorAssignmentRequest,
     PatientDoctorAssignmentResponse,
 )
@@ -17,6 +17,7 @@ router = APIRouter(
     "/",
     response_model=PatientDoctorAssignmentResponse,
 )
+
 def assign_doctor(
     request: PatientDoctorAssignmentRequest,
     current_user: dict = Depends(require_treatment_record_creator),

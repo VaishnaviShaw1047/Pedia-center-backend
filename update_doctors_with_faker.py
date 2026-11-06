@@ -5,7 +5,7 @@ from datetime import time
 from faker import Faker
 from pymongo import ASCENDING
 
-from app.mongodb import doctors_collection
+from app.repository.mongodb import doctors_collection
 
 fake = Faker("en_IN")
 Faker.seed(2026)

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app import schemas
+from app.schemas import schemas
 from app.auth import (
     require_treatment_record_creator,
     require_treatment_record_viewer,

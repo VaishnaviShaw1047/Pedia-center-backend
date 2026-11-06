@@ -25,7 +25,7 @@ from app.config import (
     ALGORITHM,
     ACCESS_TOKEN_EXPIRE_MINUTES,
 )
-from app.mongodb import (
+from app.repository.mongodb import (
     guardians_collection,
     doctors_collection,
     users_collection,
@@ -247,6 +247,7 @@ def require_admin(
 
 #ADMIN-----------------------------------------------------------------------
 def require_admin(
+    
     current_user=Depends(get_current_user),
 ):
     role = current_user.get(

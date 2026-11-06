@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from main import app
 from app.auth import create_access_token, hash_password
-from app.mongodb import guardians_collection
+from app.repository.mongodb import guardians_collection
 
 
 client = TestClient(app)

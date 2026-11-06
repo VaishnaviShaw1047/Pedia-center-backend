@@ -7,9 +7,10 @@ response. No queries, no business rules.
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app import schemas
+from app.schemas import schemas
 from app.auth import get_current_user
 from app.service.service import AuthService
+from app.service.service import AppointmentService
 
 router = APIRouter()
 
